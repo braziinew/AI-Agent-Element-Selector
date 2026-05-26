@@ -1,4 +1,4 @@
-/* Стили для Master Panel и Sticky Notes внутри Shadow DOM (AI Annotator V4) */
+/* Стили Shadow DOM — AI Annotator V5 */
 
 :host {
   all: initial;
@@ -25,18 +25,20 @@
   pointer-events: none;
 }
 
-/* --- MASTER CONTROL PANEL --- */
+/* =============================================
+   MASTER CONTROL PANEL
+   ============================================= */
 .master-panel {
   position: fixed !important;
   bottom: 24px !important;
   right: 24px !important;
   width: 300px !important;
-  background: rgba(15, 23, 42, 0.9) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+  background: rgba(10, 15, 30, 0.92) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04) !important;
   padding: 12px 14px !important;
   display: flex !important;
   flex-direction: column !important;
@@ -51,7 +53,7 @@
   align-items: center !important;
   justify-content: space-between !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding-bottom: 6px !important;
+  padding-bottom: 8px !important;
 }
 
 .master-title {
@@ -62,7 +64,7 @@
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   display: flex !important;
-  align-items: center;
+  align-items: center !important;
 }
 
 .status-indicator {
@@ -80,6 +82,7 @@
   background-color: #ef4444 !important;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
   transition: all 0.3s ease !important;
+  flex-shrink: 0 !important;
 }
 
 .status-dot.active {
@@ -87,10 +90,15 @@
   box-shadow: 0 0 8px rgba(16, 185, 129, 0.5) !important;
 }
 
-/* Оранжевая точка при редактировании (выбор на паузе) */
 .status-dot.editing {
   background-color: #f59e0b !important;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.5) !important;
+  animation: pulse 1.5s infinite alternate !important;
+}
+
+.status-dot.template-mode {
+  background-color: #6366f1 !important;
+  box-shadow: 0 0 8px rgba(99,102,241,0.5) !important;
   animation: pulse 1.5s infinite alternate !important;
 }
 
@@ -99,20 +107,32 @@
   to { opacity: 1; }
 }
 
+/* Сетка кнопок режимов 2x1 + 1 */
+.mode-buttons-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+}
+
+.btn-template-row {
+  grid-column: 1 / -1 !important;
+}
+
+/* --- КНОПКИ РЕЖИМОВ --- */
 .btn-toggle-inspect {
   width: 100% !important;
   background: rgba(99, 102, 241, 0.12) !important;
   border: 1px dashed rgba(99, 102, 241, 0.4) !important;
   color: #a5b4fc !important;
-  padding: 8px !important;
-  border-radius: 6px !important;
-  font-size: 12px !important;
+  padding: 8px 4px !important;
+  border-radius: 8px !important;
+  font-size: 11.5px !important;
   font-weight: 550 !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 6px !important;
+  gap: 5px !important;
   transition: all 0.2s !important;
 }
 
@@ -126,10 +146,84 @@
   background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
   border: none !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
 }
 
 .btn-toggle-inspect:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: #4b5563 !important;
+  cursor: not-allowed !important;
+}
+
+.btn-toggle-edit {
+  width: 100% !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px dashed rgba(245, 158, 11, 0.4) !important;
+  color: #fbd38d !important;
+  padding: 8px 4px !important;
+  border-radius: 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 550 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  transition: all 0.2s !important;
+}
+
+.btn-toggle-edit:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+.btn-toggle-edit.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35) !important;
+}
+
+.btn-toggle-edit:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: #4b5563 !important;
+  cursor: not-allowed !important;
+}
+
+.btn-toggle-templates {
+  width: 100% !important;
+  background: rgba(99, 102, 241, 0.1) !important;
+  border: 1px dashed rgba(99, 102, 241, 0.35) !important;
+  color: #a5b4fc !important;
+  padding: 7px 4px !important;
+  border-radius: 8px !important;
+  font-size: 11.5px !important;
+  font-weight: 550 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  transition: all 0.2s !important;
+}
+
+.btn-toggle-templates:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.22) !important;
+  border-color: #6366f1 !important;
+  color: #ffffff !important;
+}
+
+.btn-toggle-templates.active {
+  background: linear-gradient(135deg, #6366f1, #7c3aed) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
+}
+
+.btn-toggle-templates:disabled {
   background: rgba(255, 255, 255, 0.03) !important;
   border-color: rgba(255, 255, 255, 0.05) !important;
   color: #4b5563 !important;
@@ -143,7 +237,7 @@
 
 .btn {
   padding: 8px 10px !important;
-  border-radius: 6px !important;
+  border-radius: 7px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
@@ -208,7 +302,9 @@
   color: #ffffff !important;
 }
 
-/* --- STICKY NOTES --- */
+/* =============================================
+   STICKY NOTES
+   ============================================= */
 .sticky-note {
   position: absolute !important;
   width: 260px !important;
@@ -228,7 +324,7 @@
 }
 
 .sticky-note.minimized {
-  display: none !important; /* Полностью скрыт в свернутом состоянии */
+  display: none !important;
 }
 
 @keyframes noteFadeIn {
@@ -337,7 +433,9 @@
   color: #555c68 !important;
 }
 
-/* --- TOAST NOTIFICATIONS --- */
+/* =============================================
+   TOAST NOTIFICATIONS
+   ============================================= */
 .toast-notification {
   position: fixed !important;
   bottom: 110px !important;
@@ -348,7 +446,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
   padding: 8px 14px !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   font-size: 11px !important;
   font-weight: 500 !important;
   z-index: 2147483647 !important;
@@ -365,42 +463,662 @@
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* --- РЕЖИМ РЕДАКТИРОВАНИЯ И ПЕРЕМЕЩЕНИЯ --- */
+/* =============================================
+   EDIT PROPERTIES PANEL
+   ============================================= */
+.edit-props-panel {
+  position: fixed !important;
+  top: 50% !important;
+  right: 338px !important;
+  transform: translateY(-50%) !important;
+  width: 240px !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  background: rgba(10, 15, 30, 0.96) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(245, 158, 11, 0.25) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  padding: 0 !important;
+  z-index: 2147483646 !important;
+  pointer-events: auto !important;
+  display: none;
+  animation: panelSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255,255,255,0.1) transparent !important;
+}
 
-/* Кнопка "Редактировать" в Master Panel */
-.btn-toggle-edit {
-  width: 100% !important;
-  background: rgba(245, 158, 11, 0.12) !important;
-  border: 1px dashed rgba(245, 158, 11, 0.4) !important;
-  color: #fbd38d !important;
-  padding: 8px !important;
-  border-radius: 6px !important;
-  font-size: 12px !important;
-  font-weight: 550 !important;
+.edit-props-panel.visible {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(-50%) translateX(16px); }
+  to   { opacity: 1; transform: translateY(-50%) translateX(0); }
+}
+
+.edit-props-panel::-webkit-scrollbar {
+  width: 4px !important;
+}
+.edit-props-panel::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.edit-props-panel::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1) !important;
+  border-radius: 4px !important;
+}
+
+.ep-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 12px 8px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  position: sticky !important;
+  top: 0 !important;
+  background: rgba(10, 15, 30, 0.98) !important;
+  z-index: 2 !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+
+.ep-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #f59e0b !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.ep-selector {
+  font-size: 9.5px !important;
+  color: #4b5563 !important;
+  font-family: monospace !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 140px !important;
+}
+
+.ep-close {
+  background: transparent !important;
+  border: none !important;
+  color: #6b7280 !important;
+  font-size: 16px !important;
   cursor: pointer !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  line-height: 1 !important;
+  transition: all 0.15s !important;
+  flex-shrink: 0 !important;
+}
+
+.ep-close:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+}
+
+/* Секции панели */
+.ep-section {
+  padding: 8px 12px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+
+.ep-section:last-child {
+  border-bottom: none !important;
+}
+
+.ep-section-title {
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #4b5563 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Поля в секции */
+.ep-field {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  margin-bottom: 6px !important;
+}
+
+.ep-field:last-child {
+  margin-bottom: 0 !important;
+}
+
+.ep-label {
+  font-size: 10.5px !important;
+  color: #9ca3af !important;
+  flex-shrink: 0 !important;
+  width: 56px !important;
+}
+
+.ep-input {
+  flex: 1 !important;
+  background: rgba(30,41,59,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 5px !important;
+  padding: 4px 6px !important;
+  font-size: 11px !important;
+  color: #f3f4f6 !important;
+  font-family: monospace !important;
+  transition: border-color 0.15s !important;
+  width: 100% !important;
+}
+
+.ep-input:focus {
+  outline: none !important;
+  border-color: #f59e0b !important;
+}
+
+/* Поле с единицами измерения */
+.ep-input-unit {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 !important;
+  position: relative !important;
+}
+
+.ep-input-unit input {
+  flex: 1 !important;
+  background: rgba(30,41,59,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 5px !important;
+  padding: 4px 22px 4px 6px !important;
+  font-size: 11px !important;
+  color: #f3f4f6 !important;
+  font-family: monospace !important;
+  width: 100% !important;
+  transition: border-color 0.15s !important;
+}
+
+.ep-input-unit input:focus {
+  outline: none !important;
+  border-color: #f59e0b !important;
+}
+
+.ep-unit {
+  position: absolute !important;
+  right: 6px !important;
+  font-size: 9px !important;
+  color: #4b5563 !important;
+  pointer-events: none !important;
+}
+
+/* Цвет */
+.ep-color-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  flex: 1 !important;
+}
+
+.ep-color-swatch {
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 4px !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+.ep-color-swatch input[type="color"] {
+  position: absolute !important;
+  inset: 0 !important;
+  opacity: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  cursor: pointer !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.ep-color-hex {
+  flex: 1 !important;
+  background: rgba(30,41,59,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 5px !important;
+  padding: 4px 6px !important;
+  font-size: 10px !important;
+  color: #f3f4f6 !important;
+  font-family: monospace !important;
+  transition: border-color 0.15s !important;
+}
+
+.ep-color-hex:focus {
+  outline: none !important;
+  border-color: #f59e0b !important;
+}
+
+/* Слайдер */
+.ep-slider {
+  flex: 1 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  height: 4px !important;
+  border-radius: 2px !important;
+  background: rgba(255,255,255,0.1) !important;
+  outline: none !important;
+  cursor: pointer !important;
+}
+
+.ep-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #f59e0b !important;
+  cursor: pointer !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3) !important;
+  transition: transform 0.15s !important;
+}
+
+.ep-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2) !important;
+}
+
+/* 4-стороннее поле (padding/margin) */
+.ep-4side {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 4px !important;
+  flex: 1 !important;
+}
+
+.ep-4side input {
+  background: rgba(30,41,59,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 4px !important;
+  padding: 3px 5px !important;
+  font-size: 10px !important;
+  color: #f3f4f6 !important;
+  font-family: monospace !important;
+  width: 100% !important;
+  text-align: center !important;
+  transition: border-color 0.15s !important;
+}
+
+.ep-4side input:focus {
+  outline: none !important;
+  border-color: #f59e0b !important;
+}
+
+.ep-4side-labels {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 4px !important;
+  margin-top: 2px !important;
+}
+
+.ep-4side-label {
+  font-size: 8.5px !important;
+  color: #4b5563 !important;
+  text-align: center !important;
+  letter-spacing: 0.04em !important;
+}
+
+/* Выравнивание текста */
+.ep-align-group {
+  display: flex !important;
+  gap: 3px !important;
+  flex: 1 !important;
+}
+
+.ep-align-btn {
+  flex: 1 !important;
+  background: rgba(255,255,255,0.05) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 4px !important;
+  color: #9ca3af !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  transition: all 0.15s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.ep-align-btn:hover,
+.ep-align-btn.active {
+  background: rgba(245,158,11,0.2) !important;
+  border-color: #f59e0b !important;
+  color: #f59e0b !important;
+}
+
+/* Font weight select */
+.ep-select {
+  flex: 1 !important;
+  background: rgba(30,41,59,0.6) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 5px !important;
+  padding: 4px 6px !important;
+  font-size: 11px !important;
+  color: #f3f4f6 !important;
+  cursor: pointer !important;
+  transition: border-color 0.15s !important;
+}
+
+.ep-select:focus {
+  outline: none !important;
+  border-color: #f59e0b !important;
+}
+
+/* Textarea для текста */
+.ep-textarea {
+  width: 100% !important;
+  background: rgba(30,41,59,0.5) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 6px !important;
+  padding: 7px !important;
+  font-size: 11px !important;
+  color: #f3f4f6 !important;
+  resize: vertical !important;
+  min-height: 54px !important;
+  max-height: 100px !important;
+  transition: border-color 0.15s !important;
+  font-family: inherit !important;
+  line-height: 1.5 !important;
+}
+
+.ep-textarea:focus {
+  outline: none !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.15) !important;
+}
+
+/* Кнопка «Копировать изменения» */
+.ep-copy-btn {
+  width: 100% !important;
+  padding: 8px !important;
+  background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.2)) !important;
+  border: 1px solid rgba(245,158,11,0.35) !important;
+  border-radius: 8px !important;
+  color: #fbbf24 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 6px !important;
-  transition: all 0.2s !important;
 }
 
-.btn-toggle-edit:hover:not(:disabled) {
-  background: rgba(245, 158, 11, 0.22) !important;
+.ep-copy-btn:hover {
+  background: linear-gradient(135deg, rgba(245,158,11,0.35), rgba(217,119,6,0.35)) !important;
   border-color: #f59e0b !important;
-  color: #ffffff !important;
+  color: #fff !important;
 }
 
-.btn-toggle-edit.active {
-  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+.ep-changes-badge {
+  background: #f59e0b !important;
+  color: #000 !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  padding: 1px 5px !important;
+  border-radius: 10px !important;
+}
+
+/* Hint */
+.ep-hint {
+  font-size: 9.5px !important;
+  color: #374151 !important;
+  text-align: center !important;
+  padding: 4px 8px 8px !important;
+}
+
+/* =============================================
+   TEMPLATES PANEL
+   ============================================= */
+.templates-panel {
+  position: fixed !important;
+  top: 50% !important;
+  right: 338px !important;
+  transform: translateY(-50%) !important;
+  width: 270px !important;
+  max-height: 88vh !important;
+  overflow-y: auto !important;
+  background: rgba(10, 15, 30, 0.96) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.04) !important;
+  z-index: 2147483646 !important;
+  pointer-events: auto !important;
+  display: none;
+  animation: panelSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(255,255,255,0.1) transparent !important;
+}
+
+.templates-panel.visible {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.templates-panel::-webkit-scrollbar { width: 4px !important; }
+.templates-panel::-webkit-scrollbar-track { background: transparent !important; }
+.templates-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1) !important; border-radius: 4px !important; }
+
+.tp-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 12px 8px !important;
+  border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+  position: sticky !important;
+  top: 0 !important;
+  background: rgba(10, 15, 30, 0.98) !important;
+  z-index: 2 !important;
+  border-radius: 14px 14px 0 0 !important;
+}
+
+.tp-title {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #a5b4fc !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.tp-close {
+  background: transparent !important;
   border: none !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3) !important;
+  color: #6b7280 !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 2px 4px !important;
+  border-radius: 4px !important;
+  line-height: 1 !important;
+  transition: all 0.15s !important;
 }
 
-.btn-toggle-edit:disabled {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.05) !important;
+.tp-close:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: #fff !important;
+}
+
+/* Информация о режиме вставки */
+.tp-insert-hint {
+  margin: 8px 12px !important;
+  background: rgba(99,102,241,0.12) !important;
+  border: 1px solid rgba(99,102,241,0.3) !important;
+  border-radius: 8px !important;
+  padding: 7px 10px !important;
+  font-size: 10.5px !important;
+  color: #a5b4fc !important;
+  display: none !important;
+  align-items: flex-start !important;
+  gap: 6px !important;
+  line-height: 1.4 !important;
+  animation: noteFadeIn 0.2s ease-out !important;
+}
+
+.tp-insert-hint.active {
+  display: flex !important;
+}
+
+/* Категории */
+.tp-category {
+  padding: 0 !important;
+}
+
+.tp-cat-header {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 12px 4px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
   color: #4b5563 !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  transition: color 0.15s !important;
+}
+
+.tp-cat-header:hover {
+  color: #6b7280 !important;
+}
+
+.tp-cat-arrow {
+  margin-left: auto !important;
+  font-size: 8px !important;
+  transition: transform 0.2s !important;
+}
+
+.tp-cat-body {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 6px !important;
+  padding: 0 8px 8px !important;
+}
+
+.tp-cat-body.collapsed {
+  display: none !important;
+}
+
+/* Карточка шаблона */
+.tp-card {
+  background: rgba(30,41,59,0.4) !important;
+  border: 1px solid rgba(255,255,255,0.07) !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.18s !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.tp-card:hover {
+  background: rgba(99,102,241,0.12) !important;
+  border-color: rgba(99,102,241,0.35) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+}
+
+.tp-card.inserting {
+  background: rgba(99,102,241,0.22) !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.3) !important;
+}
+
+.tp-card-preview {
+  height: 48px !important;
+  border-radius: 5px !important;
+  overflow: hidden !important;
+  background: rgba(99,102,241,0.06) !important;
+  border: 1px solid rgba(99,102,241,0.12) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  padding: 6px !important;
+}
+
+.tp-card-name {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  color: #9ca3af !important;
+  text-align: center !important;
+  line-height: 1.3 !important;
+}
+
+.tp-card:hover .tp-card-name {
+  color: #c7d2fe !important;
+}
+
+/* Кнопки действий внизу templates panel */
+.tp-actions {
+  padding: 8px 10px !important;
+  border-top: 1px solid rgba(255,255,255,0.06) !important;
+  position: sticky !important;
+  bottom: 0 !important;
+  background: rgba(10,15,30,0.98) !important;
+  border-radius: 0 0 14px 14px !important;
+}
+
+.tp-copy-btn {
+  width: 100% !important;
+  padding: 8px !important;
+  background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(124,58,237,0.2)) !important;
+  border: 1px solid rgba(99,102,241,0.35) !important;
+  border-radius: 8px !important;
+  color: #a5b4fc !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+.tp-copy-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(99,102,241,0.35), rgba(124,58,237,0.35)) !important;
+  border-color: #6366f1 !important;
+  color: #fff !important;
+}
+
+.tp-copy-btn:disabled {
+  opacity: 0.4 !important;
   cursor: not-allowed !important;
 }
+
+/* Превью мини-блоков в карточках шаблонов */
+.tpv-bar { height: 5px; border-radius: 2px; background: rgba(99,102,241,0.35); width: 100%; }
+.tpv-bar.w60 { width: 60%; }
+.tpv-bar.w40 { width: 40%; }
+.tpv-bar.w30 { width: 30%; }
+.tpv-row { display: flex; gap: 3px; align-items: center; width: 100%; }
+.tpv-rect { border-radius: 2px; background: rgba(99,102,241,0.25); border: 1px solid rgba(99,102,241,0.2); }
+.tpv-circle { border-radius: 50%; background: rgba(99,102,241,0.25); }
+.tpv-col { display: flex; flex-direction: column; gap: 3px; flex:1; }
+.tpv-grid { display: grid; gap: 3px; width: 100%; }
+.tpv-grid.c2 { grid-template-columns: 1fr 1fr; }
+.tpv-grid.c3 { grid-template-columns: 1fr 1fr 1fr; }
+.tpv-card { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.2); border-radius: 3px; padding: 4px; display: flex; flex-direction: column; gap: 2px; }
+.tpv-btn { height: 8px; border-radius: 2px; background: rgba(99,102,241,0.4); }
+.tpv-input { height: 7px; border-radius: 2px; border: 1px solid rgba(99,102,241,0.3); background: transparent; }
