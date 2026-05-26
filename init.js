@@ -12,7 +12,7 @@ window.__AI_ANNOTATOR_INIT = true;
  * Если контент-скрипт уже запущен, а DOM был заменён (SPA-переход),
  * всё пересоздаётся заново.
  */
-function initAnnotator() {
+async function initAnnotator() {
   const alreadyAlive = rootContainer && document.body && document.body.contains(rootContainer);
   if (alreadyAlive) {
     // Просто обновим UI для верности
@@ -32,7 +32,7 @@ function initAnnotator() {
 
   createRootContainer();        // ui.js
   createOverlayElements();      // annotations.js
-  loadAnnotatorState();         // persist.js — восстановит аннотации для нового URL
+  await loadAnnotatorState();   // persist.js — восстановит аннотации для нового URL (асинхронно)
   updateMasterPanelUI();        // ui.js
   scheduleUpdatePositions();    // annotations.js
 }
@@ -94,9 +94,10 @@ chrome.runtime.onMessage.addListener((request) => {
             _resetDomReferences();
             initAnnotator();
           } else {
-            loadAnnotatorState(); // обновим url-специфичные данные
-            updateMasterPanelUI();
-            scheduleUpdatePositions();
+            loadAnnotatorState().then(() => {
+              updateMasterPanelUI();
+              scheduleUpdatePositions();
+            });
           }
         }
       });

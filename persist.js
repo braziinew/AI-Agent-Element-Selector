@@ -11,50 +11,60 @@ function _getPageKey() {
 }
 
 /**
- * Сохраняет текущее состояние: аннотации, изменения стилей, editChangesLog.
- * Вызывается при каждом изменении.
+ * Сохраняет текущее состояние: аннотации, изменения стилей, editChangesLog, шаблоны.
+ * Вызывается при каждом изменении. Работает в фоне (не ждем завершения).
  */
 function saveAnnotatorState() {
   try {
     // Собираем применённые стили из editChangesLog
     const appliedStyles = {};
     const skipProps = ['textContent', 'clone', 'removed', 'wrap', 'position-in-dom'];
-    editChangesLog.forEach(c => {
-      if (skipProps.includes(c.property)) return;
-      if (!appliedStyles[c.selector]) appliedStyles[c.selector] = {};
-      appliedStyles[c.selector][c.property] = c.newValue;
-    });
+    if (window.editChangesLog) {
+      editChangesLog.forEach(c => {
+        if (skipProps.includes(c.property)) return;
+        if (!appliedStyles[c.selector]) appliedStyles[c.selector] = {};
+        appliedStyles[c.selector][c.property] = c.newValue;
+      });
+    }
 
     const data = {
-      editChanges: editChangesLog,
+      url: window.location.href, // сохраняем URL для удобства при копировании
+      editChanges: window.editChangesLog || [],
       appliedStyles,
-      annotations: annotations.map(a => ({
+      annotations: (window.annotations || []).map(a => ({
         selector: a.selector,
         text: a.text,
         tagName: a.tagName,
         html: (a.html || '').substring(0, 3000),
       })),
+      insertedTemplates: (window.insertedTemplates || []).map(t => ({
+        id: t.id,
+        label: t.label,
+        selector: t.selector
+      })),
       ts: Date.now(),
     };
 
-    localStorage.setItem(_getPageKey(), JSON.stringify(data));
+    chrome.storage.local.set({ [_getPageKey()]: data });
   } catch (e) {
     console.warn('AI Annotator: ошибка сохранения состояния', e);
   }
 }
 
 /**
- * Загружает и восстанавливает состояние из localStorage.
- * Должна вызываться после готовности DOM.
+ * Загружает и восстанавливает состояние из chrome.storage.local.
+ * Асинхронная функция.
  */
-function loadAnnotatorState() {
+async function loadAnnotatorState() {
   try {
-    const raw = localStorage.getItem(_getPageKey());
-    if (!raw) return;
+    const key = _getPageKey();
+    const result = await chrome.storage.local.get(key);
+    const data = result[key];
+    
+    if (!data) return;
 
-    const data = JSON.parse(raw);
-    if (!data || Date.now() - data.ts > _PERSIST_MAX_AGE) {
-      localStorage.removeItem(_getPageKey());
+    if (Date.now() - data.ts > _PERSIST_MAX_AGE) {
+      chrome.storage.local.remove(key);
       return;
     }
 
@@ -62,8 +72,14 @@ function loadAnnotatorState() {
 
     // 1. Восстанавливаем лог изменений (для промпта)
     if (Array.isArray(data.editChanges) && data.editChanges.length) {
-      editChangesLog = data.editChanges;
-      _updateChangesCounter();
+      window.editChangesLog = data.editChanges;
+      if (typeof _updateChangesCounter === 'function') _updateChangesCounter();
+      restored = true;
+    }
+
+    // 1.5 Восстанавливаем информацию о вставленных шаблонах (для промпта)
+    if (Array.isArray(data.insertedTemplates) && data.insertedTemplates.length) {
+      window.insertedTemplates = data.insertedTemplates;
       restored = true;
     }
 
@@ -87,7 +103,7 @@ function loadAnnotatorState() {
         try {
           const el = document.querySelector(annData.selector);
           if (!el) return;
-          if (annotations.some(a => a.element === el)) return;
+          if (window.annotations.some(a => a.element === el)) return;
 
           const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
           const ann = {
@@ -99,18 +115,22 @@ function loadAnnotatorState() {
             text:     annData.text || '',
             minimized: true,
           };
-          annotations.push(ann);
-          if (shadowRoot) createStickyNote(ann);
+          window.annotations.push(ann);
+          if (typeof createStickyNote === 'function' && window.shadowRoot) createStickyNote(ann);
           restored = true;
         } catch (e) {}
       });
     }
 
-    if (restored && shadowRoot) {
-      scheduleUpdatePositions();
-      updateMasterPanelUI();
-      _updateCopyAgentBtn();
-      showToastNotification(`Восстановлено ${annotations.length ? annotations.length + ' аннотаций' : ''}${editChangesLog.length ? ' + изменения' : ''}`);
+    if (restored && window.shadowRoot) {
+      if (typeof scheduleUpdatePositions === 'function') scheduleUpdatePositions();
+      if (typeof updateMasterPanelUI === 'function') updateMasterPanelUI();
+      if (typeof _updateCopyAgentBtn === 'function') _updateCopyAgentBtn();
+      if (typeof showToastNotification === 'function') {
+        const anns = window.annotations ? window.annotations.length : 0;
+        const edits = window.editChangesLog ? window.editChangesLog.length : 0;
+        showToastNotification(`Восстановлено ${anns ? anns + ' аннот.' : ''} ${edits ? '+ ' + edits + ' изм.' : ''}`);
+      }
     }
 
   } catch (e) {
@@ -120,5 +140,20 @@ function loadAnnotatorState() {
 
 /** Очищает сохранённое состояние для текущей страницы */
 function clearAnnotatorState() {
-  try { localStorage.removeItem(_getPageKey()); } catch (e) {}
+  try { chrome.storage.local.remove(_getPageKey()); } catch (e) {}
+}
+
+/** 
+ * Очищает ВСЕ сохранённые страницы (глобально)
+ */
+async function clearAllGlobalState() {
+  try {
+    const allData = await chrome.storage.local.get(null);
+    const keysToRemove = Object.keys(allData).filter(k => k.startsWith(_PERSIST_PREFIX));
+    if (keysToRemove.length > 0) {
+      await chrome.storage.local.remove(keysToRemove);
+    }
+  } catch (e) {
+    console.warn('AI Annotator: ошибка глобальной очистки', e);
+  }
 }

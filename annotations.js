@@ -196,17 +196,31 @@ function deleteAnnotation(id) {
   scheduleUpdatePositions();
 }
 
-/** Удаляет все аннотации */
-function clearAllAnnotations() {
+/** Удаляет все аннотации, правки и очищает глобальное хранилище всех страниц */
+async function clearAllAnnotations() {
   annotations.forEach(ann => {
     document.getElementById(`ai-overlay-${ann.id}`)?.remove();
     document.getElementById(`ai-badge-${ann.id}`)?.remove();
     shadowRoot?.getElementById(`ai-note-${ann.id}`)?.remove();
   });
+  
   annotations = [];
-  isEditing   = false;
+  window.editChangesLog = [];
+  window.insertedTemplates = [];
+  
+  if (typeof clearAllGlobalState === 'function') {
+    await clearAllGlobalState();
+  }
+
+  isEditing = false;
+  if (typeof stopEditMode === 'function') stopEditMode();
+
   if (rootContainer) startInspection();
   updateMasterPanelUI();
+  
+  if (typeof showToastNotification === 'function') {
+    showToastNotification('Все правки на всех страницах очищены!');
+  }
 }
 
 /* -------------------------------------------------------

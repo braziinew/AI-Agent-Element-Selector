@@ -424,76 +424,103 @@ function showToastNotification(message) {
    ------------------------------------------------------- */
 
 async function copyAllPrompt() {
-  const hasAnns = annotations.length > 0;
-  const hasEdits = window.editChangesLog && window.editChangesLog.length > 0;
-  const hasTpls = window.insertedTemplates && window.insertedTemplates.length > 0;
-  
-  if (!hasAnns && !hasEdits && !hasTpls) return;
-
-  let prompt = `URL: ${window.location.href}\n\n`;
-
-  // 1. АННОТАЦИИ
-  if (hasAnns) {
-    prompt += `📌 АННОТАЦИИ И КОММЕНТАРИИ:\n`;
-    annotations.forEach((ann, i) => {
-      const text = ann.text.trim() || 'Без комментариев.';
-      let html   = ann.html;
-      if (html.length > 2500) {
-        const m = html.match(/^<[a-zA-Z0-9\-]+[^>]*>/);
-        if (m) {
-          const tag = m[0].match(/^<([a-zA-Z0-9\-]+)/)[1];
-          html = `${m[0]}\n  <!-- [HTML truncated (${ann.html.length} chars)] -->\n</${tag}>`;
-        } else {
-          html = html.substring(0, 1000) + '\n  <!-- [HTML truncated] -->\n' + html.substring(html.length - 500);
-        }
-      }
-      prompt += `${i + 1}. Селектор: \`${ann.selector}\`\nКомментарий: ${text}\nHTML:\n\`\`\`html\n${html}\n\`\`\`\n\n`;
-    });
-  }
-
-  // 2. РЕДАКТИРОВАНИЕ (Правки)
-  if (hasEdits) {
-    prompt += `\n📝 ИЗМЕНЕНИЯ ЭЛЕМЕНТОВ (Внесённые правки):\n`;
-    const bySelector = {};
-    editChangesLog.forEach(c => { if (!bySelector[c.selector]) bySelector[c.selector]=[]; bySelector[c.selector].push(c); });
-
-    let editCounter = 1;
-    Object.entries(bySelector).forEach(([sel, changes]) => {
-      const el = document.querySelector(sel);
-      prompt += `${editCounter++}. \`${sel}\` (${el ? el.tagName.toLowerCase() : '?'})\n`;
-      changes.forEach(c => { prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`; });
-      if (el) {
-        const html = el.outerHTML;
-        prompt += `   HTML:\n\`\`\`html\n${html.length > 800 ? html.substring(0,600)+'...' : html}\n\`\`\`\n`;
-      }
-      prompt += '\n';
-    });
-  }
-
-  // 3. ШАБЛОНЫ
-  if (hasTpls) {
-    prompt += `\n📐 ШАБЛОНЫ ДЛЯ РЕАЛИЗАЦИИ (Wireframes):\nНа странице добавлены следующие wireframe-шаблоны. Пожалуйста, реализуй каждый из них в стиле данного сайта.\n\n`;
-    insertedTemplates.forEach((t, i) => {
-      const container = t.container;
-      let containerDesc = t.selector;
-      if (container && container !== document.body) {
-        const containerHtml = container.outerHTML;
-        const shortHtml = containerHtml.length > 400 ? containerHtml.substring(0, 300) + '\n...' : containerHtml;
-        prompt += `${i + 1}. Шаблон: **${t.label}**\n   Вставить внутрь: \`${containerDesc}\`\n   HTML контейнера:\n\`\`\`html\n${shortHtml}\n\`\`\`\n\n`;
-      } else {
-        prompt += `${i + 1}. Шаблон: **${t.label}**\n   Вставить в: \`${containerDesc}\`\n\n`;
-      }
-    });
-    prompt += `\nЗадача по шаблонам:\n1. Удалить все wireframe-блоки (элементы с классом \`ai-selector-template-block\`).\n2. Реализовать каждый шаблон в виде полноценного HTML/CSS-блока, используя дизайн-систему данного сайта.\n3. Убедиться, что блоки визуально согласованы с остальным содержимым страницы.\n`;
-  }
-
-  if (hasEdits || hasAnns) {
-     prompt += `\nОбщая задача: Внеси указанные изменения в код проекта.`;
-  }
+  // Сначала сохраним текущее состояние, чтобы учесть последние правки
+  if (typeof saveAnnotatorState === 'function') saveAnnotatorState();
 
   try {
+    const allData = await chrome.storage.local.get(null);
+    const prefix = 'ai-annotator-v2:';
+    const keys = Object.keys(allData).filter(k => k.startsWith(prefix));
+    
+    if (keys.length === 0) return;
+
+    let prompt = '';
+
+    // Вспомогательная функция для сокращения HTML
+    const getShortHtml = (html) => {
+      if (!html || html.length <= 400) return html;
+      const m = html.match(/^<([a-zA-Z0-9\-]+)[^>]*>/);
+      if (m) {
+        const tag = m[1];
+        return `${m[0]}\n  <!-- ... [внутренний HTML скрыт для краткости] ... -->\n</${tag}>`;
+      }
+      return html.substring(0, 200) + '...';
+    };
+
+    let totalAnns = 0;
+    let totalEdits = 0;
+    let totalTpls = 0;
+
+    keys.forEach((key) => {
+      const data = allData[key];
+      const pageUrl = data.url || key.replace(prefix, '');
+      const hasAnns = data.annotations && data.annotations.length > 0;
+      const hasEdits = data.editChanges && data.editChanges.length > 0;
+      const hasTpls = data.insertedTemplates && data.insertedTemplates.length > 0;
+
+      if (!hasAnns && !hasEdits && !hasTpls) return;
+
+      prompt += `=================================================\n`;
+      prompt += `СТРАНИЦА: ${pageUrl}\n`;
+      prompt += `=================================================\n\n`;
+
+      // 1. АННОТАЦИИ
+      if (hasAnns) {
+        totalAnns += data.annotations.length;
+        prompt += `📌 АННОТАЦИИ И ВОПРОСЫ:\n`;
+        data.annotations.forEach((ann, i) => {
+          const text = ann.text.trim() || 'Посмотри на этот элемент.';
+          prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n   Комментарий: ${text}\n   HTML элемента:\n\`\`\`html\n${getShortHtml(ann.html)}\n\`\`\`\n\n`;
+        });
+      }
+
+      // 2. РЕДАКТИРОВАНИЕ
+      if (hasEdits) {
+        totalEdits += data.editChanges.length;
+        prompt += `📝 ВНЕСЕННЫЕ ПРАВКИ (перенеси эти изменения в код):\n`;
+        const bySelector = {};
+        data.editChanges.forEach(c => { if (!bySelector[c.selector]) bySelector[c.selector]=[]; bySelector[c.selector].push(c); });
+
+        let editCounter = 1;
+        Object.entries(bySelector).forEach(([sel, changes]) => {
+          // Пытаемся найти HTML в DOM, если мы находимся на этой же странице
+          const el = document.querySelector(sel);
+          prompt += `${editCounter++}. Элемент: \`${sel}\`\n`;
+          changes.forEach(c => {
+            if (c.property === 'textContent') {
+              prompt += '   • Изменен текст на: ' + (c.newValue.includes('\\n') ? '\\n```\\n' + c.newValue + '\\n```' : '"' + c.newValue + '"') + '\\n';
+            } else {
+              prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`;
+            }
+          });
+          if (el) {
+            prompt += `   HTML (текущее состояние):\n\`\`\`html\n${getShortHtml(el.outerHTML)}\n\`\`\`\n`;
+          }
+          prompt += '\n';
+        });
+      }
+
+      // 3. ШАБЛОНЫ
+      if (hasTpls) {
+        totalTpls += data.insertedTemplates.length;
+        prompt += `📐 НОВЫЕ БЛОКИ (Wireframes):\nЯ добавил на страницу схематичные блоки-плейсхолдеры. Твоя задача по ним:\n1. Удали из кода временные плейсхолдеры (элементы с классом \`ai-selector-template-block\`).\n2. Реализуй каждый из описанных ниже блоков как полноценный HTML/CSS-компонент в стиле проекта.\n3. Убедись, что новые компоненты визуально вписываются в существующий дизайн.\n\n`;
+        data.insertedTemplates.forEach((t, i) => {
+          prompt += `${i + 1}. Блок: **${t.label}**\n   Вставить в/внутрь: \`${t.selector}\`\n\n`;
+        });
+      }
+      
+      prompt += `\n`;
+    });
+
+    if (totalAnns === 0 && totalEdits === 0 && totalTpls === 0) {
+      showToastNotification('Нет данных для копирования!');
+      return;
+    }
+
+    prompt += `Твоя задача: Внеси указанные изменения в код проекта для всех перечисленных страниц. Выдай только необходимые diff-ы или измененные участки кода, не выводи весь файл целиком.`;
+
     await navigator.clipboard.writeText(prompt.trim());
-    showToastNotification('Весь промпт скопирован в буфер обмена!');
+    showToastNotification('Глобальный промпт скопирован!');
 
     const btn = shadowRoot?.getElementById('btn-copy-all');
     if (btn) {
@@ -507,8 +534,9 @@ async function copyAllPrompt() {
       }, 1500);
     }
   } catch (err) {
-    console.error('AI Annotator: не удалось скопировать:', err);
+    console.error('AI Annotator: не удалось скопировать глобально:', err);
     alert('Не удалось скопировать. Предоставьте разрешение буфера обмена.');
   }
 }
+
 
