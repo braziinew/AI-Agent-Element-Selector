@@ -1,0 +1,102 @@
+/* Стили для подсветки элементов на странице во время инспектирования и аннотирования (V3) */
+
+/* Временная рамка при наведении */
+.ai-selector-hover-overlay {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 2147483645 !important;
+  background-color: rgba(99, 102, 241, 0.12) !important;
+  border: 1.5px solid #6366f1 !important;
+  border-radius: 4px !important;
+  box-sizing: border-box !important;
+  transition: all 0.08s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Временный ярлык с тегом и размерами при наведении */
+.ai-selector-label {
+  position: absolute !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  background: #6366f1 !important;
+  padding: 3px 6px !important;
+  border-radius: 3px !important;
+  pointer-events: none !important;
+  z-index: 2147483646 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.08s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.ai-selector-label-tag {
+  color: #a5b4fc !important;
+}
+
+.ai-selector-label-dimensions {
+  color: rgba(255, 255, 255, 0.6) !important;
+  margin-left: 4px !important;
+}
+
+/* Постоянная рамка для уже выбранных аннотированных элементов */
+.ai-selector-persistent-overlay {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 2147483638 !important;
+  background-color: rgba(16, 185, 129, 0.04) !important;
+  border: 2px dashed #10b981 !important;
+  border-radius: 6px !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.15) !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Постоянный кликабельный ПИН (бейдж) поверх выделенного элемента */
+.ai-selector-persistent-badge {
+  position: absolute !important;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  background: #10b981 !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: auto !important; /* ВАЖНО: Разрешаем клик по пину */
+  cursor: pointer !important;
+  z-index: 2147483639 !important;
+  box-shadow: 0 3px 6px rgba(16, 185, 129, 0.4) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  user-select: none !important;
+}
+
+.ai-selector-persistent-badge:hover {
+  transform: scale(1.15) !important;
+  background: #059669 !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.7), 0 3px 8px rgba(0,0,0,0.3) !important;
+}
+
+.ai-selector-persistent-badge:active {
+  transform: scale(0.95) !important;
+}
+
+/* Стиль пина, если его стикер свернут (минимизирован) */
+.ai-selector-persistent-badge.minimized {
+  background: #3b82f6 !important; /* Синий цвет для свернутых пинов */
+  box-shadow: 0 3px 6px rgba(59, 130, 246, 0.4) !important;
+  animation: pulseBlue 2s infinite alternate !important;
+}
+
+.ai-selector-persistent-badge.minimized:hover {
+  background: #2563eb !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.7), 0 3px 8px rgba(0,0,0,0.3) !important;
+}
+
+@keyframes pulseBlue {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  100% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+}
