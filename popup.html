@@ -9,6 +9,8 @@
       --card-bg: rgba(17, 24, 39, 0.7);
       --primary-grad: linear-gradient(135deg, #6366f1, #3b82f6);
       --primary-hover: linear-gradient(135deg, #4f46e5, #2563eb);
+      --danger-grad: linear-gradient(135deg, #ef4444, #dc2626);
+      --danger-hover: linear-gradient(135deg, #dc2626, #b91c1c);
       --text-main: #f3f4f6;
       --text-muted: #9ca3af;
       --border-color: rgba(255, 255, 255, 0.08);
@@ -63,9 +65,27 @@
       -webkit-text-fill-color: transparent;
     }
 
-    .btn-select {
-      background: var(--primary-grad);
-      color: white;
+    .status {
+      font-size: 11px;
+      text-align: center;
+      padding: 6px;
+      border-radius: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+    }
+    .status .dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 4px;
+      background: #6366f1;
+    }
+    .status.off .dot {
+      background: #6b7280;
+    }
+
+    .btn-toggle {
       border: none;
       padding: 10px 14px;
       border-radius: 8px;
@@ -77,13 +97,26 @@
       justify-content: center;
       gap: 6px;
       transition: all 0.2s ease;
-      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
     }
 
-    .btn-select:hover {
+    .btn-toggle.on {
+      background: var(--danger-grad);
+      color: white;
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+    }
+    .btn-toggle.on:hover {
+      background: var(--danger-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-toggle.off {
+      background: var(--primary-grad);
+      color: white;
+      box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+    }
+    .btn-toggle.off:hover {
       background: var(--primary-hover);
       transform: translateY(-1px);
-      box-shadow: 0 5px 12px rgba(99, 102, 241, 0.35);
     }
 
     .info {
@@ -113,12 +146,17 @@
       <h1 class="title">AI Element Selector</h1>
     </div>
 
-    <button id="start-inspect" class="btn-select">
-      <span>🔍</span> Начать выбор элемента
+    <div id="status-text" class="status off">
+      <span class="dot"></span><span>Выключено</span>
+    </div>
+
+    <button id="toggle-btn" class="btn-toggle off">
+      <span>🔍</span> Включить Annotator
     </button>
 
     <p class="info">
-      Кликните на элемент для добавления аннотации. Быстрый запуск: <span>Ctrl + Shift + S</span>.
+      При включении расширение останется активным на всех страницах и после перезагрузки.
+      Быстрый переключатель: <span>Ctrl + Shift + S</span>.
     </p>
   </div>
   <script src="popup.js"></script>

@@ -318,6 +318,11 @@ function unloadAnnotator() {
     shadowRoot    = null;
   }
   isEditing = false;
+  
+  // Отключаем глобальное состояние
+  if (chrome && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.set({ isExtensionGlobalActive: false });
+  }
 }
 
 /* -------------------------------------------------------

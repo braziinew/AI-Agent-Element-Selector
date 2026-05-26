@@ -5,10 +5,14 @@
   "description": "Инструмент для аннотирования, редактирования и прототипирования веб-страниц с помощью ИИ-агентов.",
   "permissions": [
     "activeTab",
-    "clipboardWrite"
+    "clipboardWrite",
+    "storage",
+    "scripting"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-    "default_popup": "popup.html",
     "default_icon": {
       "16": "icon.png",
       "48": "icon.png",
