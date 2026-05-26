@@ -335,9 +335,18 @@ function updateMasterPanelUI() {
   // Счётчик в заголовке
   const titleEl = shadowRoot.getElementById('master-panel-title');
   if (titleEl) {
-    titleEl.innerHTML =
-      `🧠 AI Annotator <span style="font-size:11px;background:rgba(255,255,255,.12);` +
-      `padding:2px 6px;border-radius:20px;margin-left:6px;font-weight:700;">${annotations.length}</span>`;
+    const editCount = window.editChangesLog ? window.editChangesLog.length : 0;
+    
+    let html = `🧠 AI Annotator ` +
+      `<span title="Аннотации" style="font-size:11px;background:rgba(255,255,255,.12);` +
+      `padding:2px 6px;border-radius:20px;margin-left:6px;font-weight:700;color:#fff;">${annotations.length}</span>`;
+      
+    if (editCount > 0) {
+      html += `<span title="Внесенные правки" style="font-size:11px;background:rgba(245,158,11,0.2);` +
+      `padding:2px 6px;border-radius:20px;margin-left:4px;font-weight:700;color:#fbbf24;">${editCount}</span>`;
+    }
+    
+    titleEl.innerHTML = html;
   }
 
   const dot       = shadowRoot.getElementById('inspect-status-dot');
