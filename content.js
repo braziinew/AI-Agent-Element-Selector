@@ -417,6 +417,9 @@ let dragStartMouseY = 0;
 let dragStartElRect = null;
 let dropTarget = null;
 let dropPosition = null; // 'before' | 'after'
+let isResizing = false; // Флаг изменения размеров
+let resizeStartWidth = 0;
+let resizeStartHeight = 0;
 
 let annotations = []; // массив объектов { id, element, selector, tagName, html, text, minimized }
 let lastHoveredElement = null;
@@ -568,6 +571,14 @@ function createOverlayElements() {
     editSelectedOverlay = document.createElement('div');
     editSelectedOverlay.className = 'ai-selector-edit-selected-overlay';
     editSelectedOverlay.style.display = 'none';
+
+    // Создаем маркер изменения размеров
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'ai-selector-resize-handle';
+    resizeHandle.title = 'Изменить размеры элемента';
+    resizeHandle.addEventListener('mousedown', startResize);
+    editSelectedOverlay.appendChild(resizeHandle);
+
     document.body.appendChild(editSelectedOverlay);
   }
 
@@ -1654,6 +1665,65 @@ function dragEnd(e) {
   updatePositions();
 
   dropTarget = null;
+}
+
+/* --- ИЗМЕНЕНИЕ РАЗМЕРОВ ЭЛЕМЕНТА (RESIZE) --- */
+
+// Начало изменения размеров
+function startResize(e) {
+  if (!selectedEditElement) return;
+  e.preventDefault();
+  e.stopPropagation(); // Отменяем всплытие, чтобы не сработало перетаскивание!
+
+  isResizing = true;
+  dragStartMouseX = e.clientX;
+  dragStartMouseY = e.clientY;
+
+  const rect = selectedEditElement.getBoundingClientRect();
+  resizeStartWidth = rect.width;
+  resizeStartHeight = rect.height;
+
+  window.addEventListener('mousemove', resizeMove, true);
+  window.addEventListener('mouseup', resizeEnd, true);
+}
+
+// Процесс изменения размеров
+function resizeMove(e) {
+  if (!isResizing || !selectedEditElement) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  const dx = e.clientX - dragStartMouseX;
+  const dy = e.clientY - dragStartMouseY;
+
+  // Рассчитываем новые размеры (ограничиваем минимальный размер 15px)
+  const newWidth = Math.max(15, resizeStartWidth + dx);
+  const newHeight = Math.max(15, resizeStartHeight + dy);
+
+  selectedEditElement.style.width = `${newWidth}px`;
+  selectedEditElement.style.height = `${newHeight}px`;
+
+  // Сбрасываем max-width/max-height если они мешают ресайзу
+  selectedEditElement.style.maxWidth = 'none';
+  selectedEditElement.style.maxHeight = 'none';
+
+  // Обновляем рамку выделения
+  updateEditPositions();
+}
+
+// Завершение изменения размеров
+function resizeEnd(e) {
+  if (!isResizing) return;
+  isResizing = false;
+
+  window.removeEventListener('mousemove', resizeMove, true);
+  window.removeEventListener('mouseup', resizeEnd, true);
+
+  showToastNotification("Размеры элемента изменены");
+
+  // Пересчитываем положения всех оверлеев и аннотаций
+  updateEditPositions();
+  updatePositions();
 }
 
 // Генерация уникального CSS-селектора

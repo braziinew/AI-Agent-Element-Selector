@@ -182,3 +182,18 @@
   margin-left: 4px !important;
 }
 
+/* Маркер интерактивного изменения размеров */
+.ai-selector-resize-handle {
+  position: absolute !important;
+  right: -5px !important;
+  bottom: -5px !important;
+  width: 10px !important;
+  height: 10px !important;
+  background-color: #f59e0b !important;
+  border: 1.5px solid #ffffff !important;
+  border-radius: 50% !important;
+  cursor: se-resize !important;
+  z-index: 2147483647 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
