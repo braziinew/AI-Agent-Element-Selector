@@ -404,97 +404,6 @@ const SHADOW_CSS = `
   color: #4b5563 !important;
   cursor: not-allowed !important;
 }
-
-/* Плавающая панель инструментов редактирования */
-.edit-toolbar {
-  position: absolute !important;
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1.5px solid #f59e0b !important;
-  border-radius: 10px !important;
-  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5) !important;
-  padding: 6px 10px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 6px !important;
-  width: 250px !important;
-  z-index: 2147483645 !important;
-  pointer-events: auto !important;
-  animation: noteFadeIn 0.15s ease-out !important;
-}
-
-.edit-toolbar-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-  padding-bottom: 4px !important;
-  user-select: none !important;
-}
-
-.edit-toolbar-drag-handle {
-  display: flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  cursor: move !important;
-  font-size: 11px !important;
-  font-weight: 700 !important;
-  color: #f59e0b !important;
-  background: rgba(245, 158, 11, 0.15) !important;
-  padding: 2px 6px !important;
-  border-radius: 4px !important;
-}
-
-.edit-toolbar-tag {
-  font-size: 10px !important;
-  font-weight: 550 !important;
-  color: #9ca3af !important;
-  max-width: 60% !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-.edit-toolbar-actions {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 6px !important;
-}
-
-.btn-edit-action {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  color: #e2e8f0 !important;
-  font-size: 13px !important;
-  cursor: pointer !important;
-  padding: 4px 10px !important;
-  border-radius: 5px !important;
-  transition: all 0.15s !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex: 1 !important;
-}
-
-.btn-edit-action:hover {
-  background: rgba(245, 158, 11, 0.15) !important;
-  border-color: #f59e0b !important;
-  color: #ffffff !important;
-}
-
-.btn-edit-action.btn-edit-close {
-  color: #ef4444 !important;
-  flex: 0 0 28px !important;
-  font-size: 14px !important;
-  font-weight: bold !important;
-}
-
-.btn-edit-action.btn-edit-close:hover {
-  background: rgba(239, 68, 68, 0.15) !important;
-  border-color: #ef4444 !important;
-}
 `;
 
 // Состояние расширения
@@ -519,7 +428,6 @@ let editHoverOverlay = null;
 let editSelectedOverlay = null;
 let editLabelOverlay = null;
 let dropIndicator = null;
-let editToolbar = null;
 
 // Элементы Shadow DOM
 let rootContainer = null;
@@ -1521,9 +1429,6 @@ function selectEditElement(element) {
   if (editHoverOverlay) editHoverOverlay.style.display = 'none';
   if (editLabelOverlay) editLabelOverlay.style.display = 'none';
 
-  // Создаем плавающую панель инструментов
-  createEditToolbar();
-
   // Обновляем оверлеи
   updateEditPositions();
 
@@ -1535,16 +1440,11 @@ function selectEditElement(element) {
 function deselectEditElement() {
   selectedEditElement = null;
   if (editSelectedOverlay) editSelectedOverlay.style.display = 'none';
-
-  if (editToolbar) {
-    editToolbar.remove();
-    editToolbar = null;
-  }
 }
 
-// Обновление положения оверлея выделения и панели инструментов
+// Обновление положения оверлея выделения
 function updateEditPositions() {
-  if (!selectedEditElement || !editSelectedOverlay || !shadowRoot) return;
+  if (!selectedEditElement || !editSelectedOverlay) return;
 
   const rect = selectedEditElement.getBoundingClientRect();
   const scrollX = window.scrollX || window.pageXOffset;
@@ -1556,167 +1456,6 @@ function updateEditPositions() {
   editSelectedOverlay.style.left = `${rect.left + scrollX}px`;
   editSelectedOverlay.style.top = `${rect.top + scrollY}px`;
   editSelectedOverlay.style.display = 'block';
-
-  // Плавающая панель в Shadow DOM
-  if (editToolbar) {
-    const toolbarWidth = 250;
-    let toolbarLeft = rect.left + scrollX + (rect.width - toolbarWidth) / 2;
-    let toolbarTop = rect.top + scrollY - 65; // Высота оверлея над элементом
-
-    // Ограничение по границам экрана
-    if (toolbarLeft < scrollX + 10) {
-      toolbarLeft = scrollX + 10;
-    } else if (toolbarLeft + toolbarWidth > window.innerWidth + scrollX - 10) {
-      toolbarLeft = window.innerWidth + scrollX - toolbarWidth - 10;
-    }
-
-    if (toolbarTop < scrollY + 10) {
-      // Если сверху нет места, рендерим панель под элементом
-      toolbarTop = rect.top + scrollY + rect.height + 10;
-    }
-
-    editToolbar.style.left = `${toolbarLeft}px`;
-    editToolbar.style.top = `${toolbarTop}px`;
-
-    // Обновляем текст тега
-    const tagEl = editToolbar.querySelector('.edit-toolbar-tag');
-    if (tagEl) {
-      const tagName = selectedEditElement.tagName.toLowerCase();
-      const idStr = selectedEditElement.id ? `#${selectedEditElement.id}` : '';
-      tagEl.textContent = `${tagName}${idStr}`;
-      tagEl.title = getUniqueCssSelector(selectedEditElement);
-    }
-  }
-}
-
-// Создание плавающей панели инструментов редактирования в Shadow DOM
-function createEditToolbar() {
-  if (!shadowRoot) return;
-
-  if (editToolbar) return; // Уже создана
-
-  editToolbar = document.createElement('div');
-  editToolbar.className = 'edit-toolbar';
-
-  editToolbar.innerHTML = `
-    <div class="edit-toolbar-header">
-      <span class="edit-toolbar-drag-handle" id="edit-drag-handle" title="Зажмите мышь для перетаскивания">✥ Drag</span>
-      <span class="edit-toolbar-tag">tag</span>
-    </div>
-    <div class="edit-toolbar-actions">
-      <button class="btn-edit-action" id="btn-edit-up" title="Переместить выше">⬆</button>
-      <button class="btn-edit-action" id="btn-edit-down" title="Переместить ниже">⬇</button>
-      <button class="btn-edit-action" id="btn-edit-out" title="Вытащить из родителя">⌃</button>
-      <button class="btn-edit-action" id="btn-edit-in" title="Поместить в соседа">⌄</button>
-      <button class="btn-edit-action btn-edit-close" id="btn-edit-close" title="Снять выделение">&times;</button>
-    </div>
-  `;
-
-  // Вешаем обработчики действий
-  editToolbar.querySelector('#btn-edit-up').addEventListener('click', (e) => {
-    e.stopPropagation();
-    moveElementUp();
-  });
-  editToolbar.querySelector('#btn-edit-down').addEventListener('click', (e) => {
-    e.stopPropagation();
-    moveElementDown();
-  });
-  editToolbar.querySelector('#btn-edit-out').addEventListener('click', (e) => {
-    e.stopPropagation();
-    moveElementOut();
-  });
-  editToolbar.querySelector('#btn-edit-in').addEventListener('click', (e) => {
-    e.stopPropagation();
-    moveElementIn();
-  });
-  editToolbar.querySelector('#btn-edit-close').addEventListener('click', (e) => {
-    e.stopPropagation();
-    deselectEditElement();
-  });
-
-  shadowRoot.querySelector('.shadow-wrapper').appendChild(editToolbar);
-}
-
-/* --- ОПЕРАЦИИ С DOM-СТРУКТУРОЙ --- */
-
-// Перемещение элемента выше соседа
-function moveElementUp() {
-  if (!selectedEditElement) return;
-  const parent = selectedEditElement.parentElement;
-  if (!parent) return;
-
-  const prev = selectedEditElement.previousElementSibling;
-  if (prev) {
-    parent.insertBefore(selectedEditElement, prev);
-    showToastNotification("Элемент перемещен выше");
-
-    updateEditPositions();
-    updatePositions();
-  } else {
-    showToastNotification("Выше перемещать некуда");
-  }
-}
-
-// Перемещение элемента ниже соседа
-function moveElementDown() {
-  if (!selectedEditElement) return;
-  const parent = selectedEditElement.parentElement;
-  if (!parent) return;
-
-  const next = selectedEditElement.nextElementSibling;
-  if (next) {
-    parent.insertBefore(selectedEditElement, next.nextElementSibling);
-    showToastNotification("Элемент перемещен ниже");
-
-    updateEditPositions();
-    updatePositions();
-  } else {
-    showToastNotification("Ниже перемещать некуда");
-  }
-}
-
-// Вытаскивание элемента из родительского контейнера
-function moveElementOut() {
-  if (!selectedEditElement) return;
-  const parent = selectedEditElement.parentElement;
-  if (!parent || parent === document.body) {
-    showToastNotification("Нельзя вытащить выше уровня body");
-    return;
-  }
-
-  const grandparent = parent.parentElement;
-  if (grandparent) {
-    grandparent.insertBefore(selectedEditElement, parent.nextSibling);
-    showToastNotification("Элемент вытащен наружу");
-
-    updateEditPositions();
-    updatePositions();
-  }
-}
-
-// Помещение элемента внутрь соседнего элемента
-function moveElementIn() {
-  if (!selectedEditElement) return;
-
-  const next = selectedEditElement.nextElementSibling;
-  const prev = selectedEditElement.previousElementSibling;
-  let targetContainer = null;
-
-  if (next && next.nodeType === Node.ELEMENT_NODE) {
-    targetContainer = next;
-  } else if (prev && prev.nodeType === Node.ELEMENT_NODE) {
-    targetContainer = prev;
-  }
-
-  if (targetContainer) {
-    targetContainer.insertBefore(selectedEditElement, targetContainer.firstChild);
-    showToastNotification(`Помещено внутрь <${targetContainer.tagName.toLowerCase()}>`);
-
-    updateEditPositions();
-    updatePositions();
-  } else {
-    showToastNotification("Нет соседних элементов для внедрения");
-  }
 }
 
 /* --- DRAG AND DROP ПЕРЕМЕЩЕНИЕ --- */
@@ -1724,15 +1463,7 @@ function moveElementIn() {
 // Настройка drag-and-drop событий
 function setupDragAndDrop() {
   if (!editSelectedOverlay) return;
-
   editSelectedOverlay.onmousedown = startDrag;
-
-  if (editToolbar) {
-    const handle = editToolbar.querySelector('#edit-drag-handle');
-    if (handle) {
-      handle.onmousedown = startDrag;
-    }
-  }
 }
 
 // Начало перетаскивания
@@ -1776,24 +1507,22 @@ function dragMove(e) {
     editSelectedOverlay.style.top = `${dragStartElRect.top + scrollY + dy}px`;
   }
 
-  // Двигаем панель инструментов за курсором
-  if (editToolbar) {
-    const toolbarWidth = 250;
-    let tLeft = dragStartElRect.left + scrollX + dx + (dragStartElRect.width - toolbarWidth) / 2;
-    let tTop = dragStartElRect.top + scrollY + dy - 65;
-    editToolbar.style.left = `${tLeft}px`;
-    editToolbar.style.top = `${tTop}px`;
+  // Если зажат Alt, отключаем привязку (snapping) для свободного перемещения
+  if (e.altKey) {
+    if (dropIndicator) {
+      dropIndicator.style.display = 'none';
+    }
+    dropTarget = null;
+    return;
   }
 
   // Скрываем служебные оверлеи перед вызовом elementFromPoint
   const prevSelDisplay = editSelectedOverlay ? editSelectedOverlay.style.display : 'none';
   const prevIndDisplay = dropIndicator ? dropIndicator.style.display : 'none';
-  const prevToolDisplay = editToolbar ? editToolbar.style.display : 'none';
   const prevHoverDisplay = editHoverOverlay ? editHoverOverlay.style.display : 'none';
 
   if (editSelectedOverlay) editSelectedOverlay.style.display = 'none';
   if (dropIndicator) dropIndicator.style.display = 'none';
-  if (editToolbar) editToolbar.style.display = 'none';
   if (editHoverOverlay) editHoverOverlay.style.display = 'none';
 
   let target = document.elementFromPoint(e.clientX, e.clientY);
@@ -1801,7 +1530,6 @@ function dragMove(e) {
   // Возвращаем видимость оверлеев
   if (editSelectedOverlay) editSelectedOverlay.style.display = prevSelDisplay;
   if (dropIndicator) dropIndicator.style.display = prevIndDisplay;
-  if (editToolbar) editToolbar.style.display = prevToolDisplay;
   if (editHoverOverlay) editHoverOverlay.style.display = prevHoverDisplay;
 
   if (!target) {
@@ -1822,22 +1550,49 @@ function dragMove(e) {
   dropTarget = target;
 
   const targetRect = target.getBoundingClientRect();
-  const midY = targetRect.top + targetRect.height / 2;
+  
+  // Рассчитываем расстояния от курсора до 4 граней целевого элемента
+  const distLeft = Math.abs(e.clientX - targetRect.left);
+  const distRight = Math.abs(e.clientX - targetRect.right);
+  const distTop = Math.abs(e.clientY - targetRect.top);
+  const distBottom = Math.abs(e.clientY - targetRect.bottom);
 
-  if (e.clientY < midY) {
-    dropPosition = 'before';
+  const minDist = Math.min(distLeft, distRight, distTop, distBottom);
+
+  if (minDist === distLeft) {
+    dropPosition = 'left';
     if (dropIndicator) {
-      dropIndicator.style.width = `${targetRect.width}px`;
+      dropIndicator.className = 'ai-selector-drop-indicator vertical';
+      dropIndicator.style.left = `${targetRect.left + scrollX - 2}px`;
+      dropIndicator.style.top = `${targetRect.top + scrollY}px`;
+      dropIndicator.style.height = `${targetRect.height}px`;
+      dropIndicator.style.display = 'block';
+    }
+  } else if (minDist === distRight) {
+    dropPosition = 'right';
+    if (dropIndicator) {
+      dropIndicator.className = 'ai-selector-drop-indicator vertical';
+      dropIndicator.style.left = `${targetRect.right + scrollX - 2}px`;
+      dropIndicator.style.top = `${targetRect.top + scrollY}px`;
+      dropIndicator.style.height = `${targetRect.height}px`;
+      dropIndicator.style.display = 'block';
+    }
+  } else if (minDist === distTop) {
+    dropPosition = 'top';
+    if (dropIndicator) {
+      dropIndicator.className = 'ai-selector-drop-indicator horizontal';
       dropIndicator.style.left = `${targetRect.left + scrollX}px`;
       dropIndicator.style.top = `${targetRect.top + scrollY - 2}px`;
+      dropIndicator.style.width = `${targetRect.width}px`;
       dropIndicator.style.display = 'block';
     }
   } else {
-    dropPosition = 'after';
+    dropPosition = 'bottom';
     if (dropIndicator) {
-      dropIndicator.style.width = `${targetRect.width}px`;
+      dropIndicator.className = 'ai-selector-drop-indicator horizontal';
       dropIndicator.style.left = `${targetRect.left + scrollX}px`;
       dropIndicator.style.top = `${targetRect.bottom + scrollY - 2}px`;
+      dropIndicator.style.width = `${targetRect.width}px`;
       dropIndicator.style.display = 'block';
     }
   }
@@ -1859,16 +1614,39 @@ function dragEnd(e) {
     dropIndicator.style.display = 'none';
   }
 
-  if (dropTarget && selectedEditElement) {
+  const dx = e.clientX - dragStartMouseX;
+  const dy = e.clientY - dragStartMouseY;
+
+  // Если Alt не зажат и есть цель прилипания (dropTarget)
+  if (dropTarget && selectedEditElement && !e.altKey) {
     const parent = dropTarget.parentNode;
     if (parent) {
-      if (dropPosition === 'before') {
+      // Сбрасываем относительное смещение, так как встраиваемся в поток
+      selectedEditElement.style.position = '';
+      selectedEditElement.style.left = '';
+      selectedEditElement.style.top = '';
+
+      if (dropPosition === 'top' || dropPosition === 'left') {
         parent.insertBefore(selectedEditElement, dropTarget);
       } else {
         parent.insertBefore(selectedEditElement, dropTarget.nextSibling);
       }
-      showToastNotification("Элемент перемещен");
+      showToastNotification("Элемент перенесен в DOM");
     }
+  } else if (selectedEditElement) {
+    // Свободное позиционирование (фиксация положения)
+    const currentLeft = parseFloat(selectedEditElement.style.left) || 0;
+    const currentTop = parseFloat(selectedEditElement.style.top) || 0;
+    
+    const currentPos = window.getComputedStyle(selectedEditElement).position;
+    if (currentPos !== 'absolute' && currentPos !== 'fixed' && currentPos !== 'relative') {
+      selectedEditElement.style.position = 'relative';
+    }
+    
+    selectedEditElement.style.left = `${currentLeft + dx}px`;
+    selectedEditElement.style.top = `${currentTop + dy}px`;
+    
+    showToastNotification("Элемент зафиксирован на месте");
   }
 
   // Обновляем оверлеи
