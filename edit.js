@@ -570,50 +570,6 @@ function dragMove(e) {
   // Двигаем оверлей
   editSelectedOverlay.style.left = `${dragStartElRect.left + scroll.x + dx}px`;
   editSelectedOverlay.style.top  = `${dragStartElRect.top  + scroll.y + dy}px`;
-
-  // Ищем drop-target (только если не Alt)
-  if (!e.altKey) {
-    editSelectedOverlay.style.visibility = 'hidden';
-    if (dropIndicator)    dropIndicator.style.visibility    = 'hidden';
-    if (editHoverOverlay) editHoverOverlay.style.visibility = 'hidden';
-
-    const target = document.elementFromPoint(e.clientX, e.clientY);
-
-    editSelectedOverlay.style.visibility = '';
-    if (dropIndicator)    dropIndicator.style.visibility    = '';
-    if (editHoverOverlay) editHoverOverlay.style.visibility = '';
-
-    if (!target ||
-        target === selectedEditElement ||
-        selectedEditElement.contains(target) ||
-        (rootContainer && (target === rootContainer || rootContainer.contains(target))) ||
-        target === document.documentElement ||
-        target === document.body) {
-      if (dropIndicator) dropIndicator.style.display = 'none';
-      dropTarget = null;
-    } else {
-      dropTarget = target;
-      _updateDropIndicator(e.clientX, e.clientY, target, scroll);
-    }
-  } else {
-    if (dropIndicator) dropIndicator.style.display = 'none';
-    dropTarget = null;
-  }
-}
-
-function _updateDropIndicator(mx, my, target, scroll) {
-  if (!dropIndicator) return;
-  const tr  = target.getBoundingClientRect();
-  const dL  = Math.abs(mx - tr.left), dR = Math.abs(mx - tr.right);
-  const dT  = Math.abs(my - tr.top),  dB = Math.abs(my - tr.bottom);
-  const min = Math.min(dL, dR, dT, dB);
-
-  if (min === dL)      { dropPosition = 'left';   dropIndicator.className = 'ai-selector-drop-indicator vertical';   dropIndicator.style.left = `${tr.left+scroll.x-2}px`; dropIndicator.style.top = `${tr.top+scroll.y}px`; dropIndicator.style.height = `${tr.height}px`; dropIndicator.style.width = ''; }
-  else if (min === dR) { dropPosition = 'right';  dropIndicator.className = 'ai-selector-drop-indicator vertical';   dropIndicator.style.left = `${tr.right+scroll.x-2}px`; dropIndicator.style.top = `${tr.top+scroll.y}px`; dropIndicator.style.height = `${tr.height}px`; dropIndicator.style.width = ''; }
-  else if (min === dT) { dropPosition = 'top';    dropIndicator.className = 'ai-selector-drop-indicator horizontal'; dropIndicator.style.left = `${tr.left+scroll.x}px`; dropIndicator.style.top = `${tr.top+scroll.y-2}px`; dropIndicator.style.width = `${tr.width}px`; dropIndicator.style.height = ''; }
-  else                 { dropPosition = 'bottom'; dropIndicator.className = 'ai-selector-drop-indicator horizontal'; dropIndicator.style.left = `${tr.left+scroll.x}px`; dropIndicator.style.top = `${tr.bottom+scroll.y-2}px`; dropIndicator.style.width = `${tr.width}px`; dropIndicator.style.height = ''; }
-
-  dropIndicator.style.display = 'block';
 }
 
 function dragEnd(e) {
@@ -624,7 +580,6 @@ function dragEnd(e) {
   window.removeEventListener('mouseup',   dragEnd,  true);
 
   selectedEditElement?.classList.remove('ai-selector-dragged-element');
-  if (dropIndicator) dropIndicator.style.display = 'none';
   _hideSnapLines();
 
   const rawDx = e.clientX - dragStartMouseX;
@@ -632,22 +587,7 @@ function dragEnd(e) {
   const { dx, dy } = e.altKey ? { dx: rawDx, dy: rawDy } : _applySnap(rawDx, rawDy);
   _hideSnapLines();
 
-  if (dropTarget && selectedEditElement && !e.altKey) {
-    const oldParent = selectedEditElement.parentNode;
-    const oldNext   = selectedEditElement.nextSibling;
-    const parent    = dropTarget.parentNode;
-    if (parent) {
-      selectedEditElement.style.position = '';
-      selectedEditElement.style.left     = '';
-      selectedEditElement.style.top      = '';
-      const ref = (dropPosition === 'top' || dropPosition === 'left') ? dropTarget : dropTarget.nextSibling;
-      parent.insertBefore(selectedEditElement, ref);
-      pushUndo({ type: 'move-dom', el: selectedEditElement, oldParent, oldNext, newParent: parent, newNext: ref });
-      _trackChange(getUniqueCssSelector(selectedEditElement), 'position-in-dom',
-        `child of ${getUniqueCssSelector(oldParent)}`, `child of ${getUniqueCssSelector(parent)}`);
-      showToastNotification('Элемент перенесён в DOM');
-    }
-  } else if (selectedEditElement && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+  if (selectedEditElement && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
     const pos = window.getComputedStyle(selectedEditElement).position;
     if (!['absolute','fixed','relative'].includes(pos)) selectedEditElement.style.position = 'relative';
 
@@ -669,7 +609,6 @@ function dragEnd(e) {
   scheduleUpdatePositions();
   _syncPropsPanelPosition();
   saveAnnotatorState();
-  dropTarget = null;
 }
 
 /* -------------------------------------------------------

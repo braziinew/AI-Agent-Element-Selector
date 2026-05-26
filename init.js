@@ -3,8 +3,9 @@
    Зависит от всех остальных модулей.
    ========================================================= */
 
-/* Флаг "патч History API уже применён" — нужен только один раз за жизнь страницы */
-let _historyPatched = false;
+// Предотвращение двойной инициализации (если скрипт случайно инжектирован дважды)
+if (!window.__AI_ANNOTATOR_INIT) {
+window.__AI_ANNOTATOR_INIT = true;
 
 /**
  * Главная функция инициализации / восстановления.
@@ -12,11 +13,17 @@ let _historyPatched = false;
  * всё пересоздаётся заново.
  */
 function initAnnotator() {
-  const alreadyAlive = rootContainer && document.body.contains(rootContainer);
+  const alreadyAlive = rootContainer && document.body && document.body.contains(rootContainer);
   if (alreadyAlive) {
     // Просто обновим UI для верности
     updateMasterPanelUI();
     scheduleUpdatePositions();
+    return;
+  }
+
+  // Если document.body еще не существует (например, слишком ранний вызов)
+  if (!document.body) {
+    document.addEventListener('DOMContentLoaded', initAnnotator, { once: true });
     return;
   }
 
@@ -28,12 +35,6 @@ function initAnnotator() {
   loadAnnotatorState();         // persist.js — восстановит аннотации для нового URL
   updateMasterPanelUI();        // ui.js
   scheduleUpdatePositions();    // annotations.js
-
-  // --- Трекируем навигацию (History API / hash) — навесить один раз ---
-  if (!_historyPatched) {
-    _historyPatched = true;
-    patchHistoryAndHash();
-  }
 }
 
 /** Сбрасывает ВСЕ DOM-ссылки, чтобы create-функции заново отрисовали элементы */
@@ -54,46 +55,9 @@ function _resetDomReferences() {
   }
 }
 
-/**
- * Перехватывает History API и hashchange.
- * При ЛЮБОЙ навигации (pushState / replaceState / popstate / hashchange)
- * проверяет, не вычистил ли сайт наш DOM, и пересоздаёт при необходимости.
- */
-function patchHistoryAndHash() {
-  const origPush    = history.pushState;
-  const origReplace = history.replaceState;
-
-  const onNav = () => {
-    // Небольшая задержка, чтобы сайт успел отрисовать новую страницу
-    setTimeout(() => {
-      // Если rootContainer вычистили — пересоздаём всё; иначе просто обновляем state
-      if (!rootContainer || !document.body.contains(rootContainer)) {
-        _resetDomReferences();
-        initAnnotator();
-      } else {
-        loadAnnotatorState();
-        scheduleUpdatePositions();
-      }
-    }, 400);
-  };
-
-  history.pushState = function (...args) {
-    origPush.apply(this, args);
-    onNav();
-  };
-  history.replaceState = function (...args) {
-    origReplace.apply(this, args);
-    onNav();
-  };
-
-  window.addEventListener('popstate', onNav);
-  window.addEventListener('hashchange', onNav);
-}
-
 /** Полное выключение расширения по команде снаружи (popup / background) */
 function _deinitAnnotator() {
   try { unloadAnnotator(); } catch (e) {}
-  _historyPatched = false; // сбрасываем, чтобы при следующем включении заново привязать
 }
 
 /* =========================================================
@@ -111,7 +75,7 @@ chrome.storage.local.get(['isExtensionGlobalActive'], (result) => {
   }
 });
 
-// 2. Сообщение от popup / background
+// 2. Сообщения от popup / background
 chrome.runtime.onMessage.addListener((request) => {
   if (request.action === 'start-inspect') {
     chrome.storage.local.set({ isExtensionGlobalActive: true });
@@ -120,6 +84,23 @@ chrome.runtime.onMessage.addListener((request) => {
   if (request.action === 'global-deactivate') {
     chrome.storage.local.set({ isExtensionGlobalActive: false });
     _deinitAnnotator();
+  }
+  if (request.action === 'spa-navigate') {
+    // Небольшая задержка, чтобы сайт успел отрисовать новую страницу
+    setTimeout(() => {
+      chrome.storage.local.get(['isExtensionGlobalActive'], (result) => {
+        if (result.isExtensionGlobalActive) {
+          if (!rootContainer || !document.body || !document.body.contains(rootContainer)) {
+            _resetDomReferences();
+            initAnnotator();
+          } else {
+            loadAnnotatorState(); // обновим url-специфичные данные
+            updateMasterPanelUI();
+            scheduleUpdatePositions();
+          }
+        }
+      });
+    }, 400);
   }
 });
 
@@ -139,3 +120,5 @@ window.addEventListener('keydown', (e) => {
     });
   }
 });
+
+} // end window.__AI_ANNOTATOR_INIT check
