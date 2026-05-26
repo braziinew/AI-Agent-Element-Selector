@@ -364,3 +364,134 @@
   from { transform: translateY(80px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+/* --- РЕЖИМ РЕДАКТИРОВАНИЯ И ПЕРЕМЕЩЕНИЯ --- */
+
+/* Кнопка "Редактировать" в Master Panel */
+.btn-toggle-edit {
+  width: 100% !important;
+  background: rgba(245, 158, 11, 0.12) !important;
+  border: 1px dashed rgba(245, 158, 11, 0.4) !important;
+  color: #fbd38d !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 550 !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.2s !important;
+}
+
+.btn-toggle-edit:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.22) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+.btn-toggle-edit.active {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3) !important;
+}
+
+.btn-toggle-edit:disabled {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  color: #4b5563 !important;
+  cursor: not-allowed !important;
+}
+
+/* Плавающая панель инструментов редактирования */
+.edit-toolbar {
+  position: absolute !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1.5px solid #f59e0b !important;
+  border-radius: 10px !important;
+  box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.5) !important;
+  padding: 6px 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  width: 250px !important;
+  z-index: 2147483645 !important;
+  pointer-events: auto !important;
+  animation: noteFadeIn 0.15s ease-out !important;
+}
+
+.edit-toolbar-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  padding-bottom: 4px !important;
+  user-select: none !important;
+}
+
+.edit-toolbar-drag-handle {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  cursor: move !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+.edit-toolbar-tag {
+  font-size: 10px !important;
+  font-weight: 550 !important;
+  color: #9ca3af !important;
+  max-width: 60% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.edit-toolbar-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+}
+
+.btn-edit-action {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #e2e8f0 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  padding: 4px 10px !important;
+  border-radius: 5px !important;
+  transition: all 0.15s !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 !important;
+}
+
+.btn-edit-action:hover {
+  background: rgba(245, 158, 11, 0.15) !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
+}
+
+.btn-edit-action.btn-edit-close {
+  color: #ef4444 !important;
+  flex: 0 0 28px !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+}
+
+.btn-edit-action.btn-edit-close:hover {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: #ef4444 !important;
+}
