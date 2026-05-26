@@ -21,6 +21,8 @@
       "js": [
         "state.js",
         "helpers.js",
+        "undo.js",
+        "persist.js",
         "ui.js",
         "annotations.js",
         "inspect.js",

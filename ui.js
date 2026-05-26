@@ -50,8 +50,18 @@ function createRootContainer() {
       </div>
 
       <div class="master-actions">
-        <button class="btn btn-secondary" id="btn-clear-all" disabled>Очистить</button>
-        <button class="btn btn-primary"   id="btn-copy-all"  disabled>Скопировать всё (0)</button>
+        <div class="undo-redo-row">
+          <button class="btn-undo-redo" id="btn-undo" title="Отменить последнее действие (Ctrl+Z)" disabled>
+            ↩ <span class="label">Отменить</span>
+          </button>
+          <button class="btn-undo-redo" id="btn-redo" title="Повторить отменённое (Ctrl+Y)" disabled>
+            <span class="label">Повторить</span> ↪
+          </button>
+        </div>
+        <button class="btn btn-secondary" id="btn-clear-all" style="width:100%;margin-top:6px;" disabled>Очистить всё</button>
+        <button class="btn-copy-agent" id="btn-copy-all" style="width:100%;margin-top:6px;" disabled>
+          <span>📋</span> Скопировать всё агенту <span class="copy-agent-count" id="copy-all-count">0</span>
+        </button>
       </div>
     </div>
 
@@ -278,6 +288,9 @@ function createRootContainer() {
   shadowRoot.getElementById('btn-clear-all').addEventListener('click', clearAllAnnotations);
   shadowRoot.getElementById('btn-copy-all').addEventListener('click', copyAllPrompt);
   shadowRoot.getElementById('btn-unload').addEventListener('click', unloadAnnotator);
+  
+  shadowRoot.getElementById('btn-undo').addEventListener('click', () => { if (typeof performUndo === 'function') performUndo(); });
+  shadowRoot.getElementById('btn-redo').addEventListener('click', () => { if (typeof performRedo === 'function') performRedo(); });
 
   // Инициализируем Properties Panel
   _bindPropsPanelEvents();
@@ -367,10 +380,19 @@ function updateMasterPanelUI() {
   }
 
   const copyBtn  = shadowRoot.getElementById('btn-copy-all');
+  const countEl  = shadowRoot.getElementById('copy-all-count');
   const clearBtn = shadowRoot.getElementById('btn-clear-all');
-  const hasAnns  = annotations.length > 0;
-  if (copyBtn)  { copyBtn.disabled  = !hasAnns; copyBtn.innerHTML = `<span>📋</span> Скопировать всё (${annotations.length})`; }
-  if (clearBtn) { clearBtn.disabled = !hasAnns; }
+  
+  const totalItems = annotations.length + (window.editChangesLog?.length || 0) + (window.insertedTemplates?.length || 0);
+  const hasData = totalItems > 0;
+  
+  if (copyBtn)  { 
+    copyBtn.disabled  = !hasData; 
+    if (countEl) countEl.textContent = totalItems;
+  }
+  if (clearBtn) { clearBtn.disabled = !hasData; }
+  
+  if (typeof _updateUndoRedoBtns === 'function') _updateUndoRedoBtns();
 }
 
 /* -------------------------------------------------------
@@ -397,41 +419,91 @@ function showToastNotification(message) {
    ------------------------------------------------------- */
 
 async function copyAllPrompt() {
-  if (!annotations.length) return;
+  const hasAnns = annotations.length > 0;
+  const hasEdits = window.editChangesLog && window.editChangesLog.length > 0;
+  const hasTpls = window.insertedTemplates && window.insertedTemplates.length > 0;
+  
+  if (!hasAnns && !hasEdits && !hasTpls) return;
 
   let prompt = `URL: ${window.location.href}\n\n`;
 
-  annotations.forEach((ann, i) => {
-    const text = ann.text.trim() || 'Без комментариев.';
-    let html   = ann.html;
-
-    if (html.length > 2500) {
-      const m = html.match(/^<[a-zA-Z0-9\-]+[^>]*>/);
-      if (m) {
-        const tag = m[0].match(/^<([a-zA-Z0-9\-]+)/)[1];
-        html = `${m[0]}\n  <!-- [HTML truncated (${ann.html.length} chars)] -->\n</${tag}>`;
-      } else {
-        html = html.substring(0, 1000) + '\n  <!-- [HTML truncated] -->\n' + html.substring(html.length - 500);
+  // 1. АННОТАЦИИ
+  if (hasAnns) {
+    prompt += `📌 АННОТАЦИИ И КОММЕНТАРИИ:\n`;
+    annotations.forEach((ann, i) => {
+      const text = ann.text.trim() || 'Без комментариев.';
+      let html   = ann.html;
+      if (html.length > 2500) {
+        const m = html.match(/^<[a-zA-Z0-9\-]+[^>]*>/);
+        if (m) {
+          const tag = m[0].match(/^<([a-zA-Z0-9\-]+)/)[1];
+          html = `${m[0]}\n  <!-- [HTML truncated (${ann.html.length} chars)] -->\n</${tag}>`;
+        } else {
+          html = html.substring(0, 1000) + '\n  <!-- [HTML truncated] -->\n' + html.substring(html.length - 500);
+        }
       }
-    }
+      prompt += `${i + 1}. Селектор: \`${ann.selector}\`\nКомментарий: ${text}\nHTML:\n\`\`\`html\n${html}\n\`\`\`\n\n`;
+    });
+  }
 
-    prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n` +
-              `Комментарий: ${text}\n` +
-              `HTML:\n\`\`\`html\n${html}\n\`\`\`\n\n`;
-  });
+  // 2. РЕДАКТИРОВАНИЕ (Правки)
+  if (hasEdits) {
+    prompt += `\n📝 ИЗМЕНЕНИЯ ЭЛЕМЕНТОВ (Внесённые правки):\n`;
+    const bySelector = {};
+    editChangesLog.forEach(c => { if (!bySelector[c.selector]) bySelector[c.selector]=[]; bySelector[c.selector].push(c); });
+
+    let editCounter = 1;
+    Object.entries(bySelector).forEach(([sel, changes]) => {
+      const el = document.querySelector(sel);
+      prompt += `${editCounter++}. \`${sel}\` (${el ? el.tagName.toLowerCase() : '?'})\n`;
+      changes.forEach(c => { prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`; });
+      if (el) {
+        const html = el.outerHTML;
+        prompt += `   HTML:\n\`\`\`html\n${html.length > 800 ? html.substring(0,600)+'...' : html}\n\`\`\`\n`;
+      }
+      prompt += '\n';
+    });
+  }
+
+  // 3. ШАБЛОНЫ
+  if (hasTpls) {
+    prompt += `\n📐 ШАБЛОНЫ ДЛЯ РЕАЛИЗАЦИИ (Wireframes):\nНа странице добавлены следующие wireframe-шаблоны. Пожалуйста, реализуй каждый из них в стиле данного сайта.\n\n`;
+    insertedTemplates.forEach((t, i) => {
+      const container = t.container;
+      let containerDesc = t.selector;
+      if (container && container !== document.body) {
+        const containerHtml = container.outerHTML;
+        const shortHtml = containerHtml.length > 400 ? containerHtml.substring(0, 300) + '\n...' : containerHtml;
+        prompt += `${i + 1}. Шаблон: **${t.label}**\n   Вставить внутрь: \`${containerDesc}\`\n   HTML контейнера:\n\`\`\`html\n${shortHtml}\n\`\`\`\n\n`;
+      } else {
+        prompt += `${i + 1}. Шаблон: **${t.label}**\n   Вставить в: \`${containerDesc}\`\n\n`;
+      }
+    });
+    prompt += `\nЗадача по шаблонам:\n1. Удалить все wireframe-блоки (элементы с классом \`ai-selector-template-block\`).\n2. Реализовать каждый шаблон в виде полноценного HTML/CSS-блока, используя дизайн-систему данного сайта.\n3. Убедиться, что блоки визуально согласованы с остальным содержимым страницы.\n`;
+  }
+
+  if (hasEdits || hasAnns) {
+     prompt += `\nОбщая задача: Внеси указанные изменения в код проекта.`;
+  }
 
   try {
     await navigator.clipboard.writeText(prompt.trim());
-    showToastNotification('Промпт скопирован в буфер обмена!');
+    showToastNotification('Весь промпт скопирован в буфер обмена!');
 
     const btn = shadowRoot?.getElementById('btn-copy-all');
     if (btn) {
+      const origHtml = btn.innerHTML;
       btn.innerHTML        = '<span>✅</span> Скопировано!';
       btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-      setTimeout(updateMasterPanelUI, 1200);
+      setTimeout(() => {
+        btn.innerHTML = origHtml;
+        btn.style.background = '';
+        updateMasterPanelUI();
+      }, 1500);
     }
   } catch (err) {
     console.error('AI Annotator: не удалось скопировать:', err);
     alert('Не удалось скопировать. Предоставьте разрешение буфера обмена.');
   }
 }
+

@@ -10,6 +10,7 @@
 function initAnnotator() {
   createRootContainer();   // ui.js
   createOverlayElements(); // annotations.js
+  loadAnnotatorState();    // persist.js (загрузка из localStorage)
   if (!isEditing) startInspection(); // inspect.js
   updateMasterPanelUI();   // ui.js
   scheduleUpdatePositions(); // annotations.js

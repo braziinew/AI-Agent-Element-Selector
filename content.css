@@ -129,6 +129,43 @@
   transition: none !important;
 }
 
+/* Кнопка-тоггл панели свойств на оверлее */
+.ai-selector-props-toggle {
+  position: absolute !important;
+  top: -26px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(10, 15, 30, 0.95) !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  border-radius: 6px !important;
+  color: #f59e0b !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif !important;
+  padding: 3px 8px !important;
+  cursor: pointer !important;
+  z-index: 2147483647 !important;
+  white-space: nowrap !important;
+  pointer-events: auto !important;
+  transition: all 0.15s !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+}
+
+.ai-selector-props-toggle:hover {
+  background: rgba(245,158,11,0.2) !important;
+  border-color: #f59e0b !important;
+  color: #fff !important;
+}
+
+.ai-selector-props-toggle.open {
+  background: rgba(245,158,11,0.25) !important;
+  border-color: #f59e0b !important;
+  color: #fff !important;
+}
+
 /* Индикатор места вставки при drag-and-drop */
 .ai-selector-drop-indicator {
   position: absolute !important;
@@ -153,6 +190,46 @@
   opacity: 0.35 !important;
   outline: 2px dashed #f59e0b !important;
   outline-offset: 2px !important;
+}
+
+/* --- SNAP ЛИНИИ --- */
+.ai-selector-snap-line {
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: 2147483647 !important;
+  opacity: 0;
+  transition: opacity 0.1s !important;
+}
+
+.ai-selector-snap-line.visible {
+  opacity: 1 !important;
+}
+
+.ai-selector-snap-line.horizontal {
+  left: 0 !important;
+  width: 100% !important;
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent 0%, #6366f1 10%, #6366f1 90%, transparent 100%) !important;
+  box-shadow: 0 0 4px rgba(99,102,241,0.8) !important;
+}
+
+.ai-selector-snap-line.vertical {
+  top: 0 !important;
+  height: 100% !important;
+  width: 1px !important;
+  background: linear-gradient(180deg, transparent 0%, #6366f1 10%, #6366f1 90%, transparent 100%) !important;
+  box-shadow: 0 0 4px rgba(99,102,241,0.8) !important;
+}
+
+/* Snap-линия по центру (показывает ось) */
+.ai-selector-snap-line.axis-x {
+  background: linear-gradient(90deg, transparent 0%, rgba(245,158,11,0.7) 15%, rgba(245,158,11,0.7) 85%, transparent 100%) !important;
+  box-shadow: 0 0 4px rgba(245,158,11,0.6) !important;
+}
+
+.ai-selector-snap-line.axis-y {
+  background: linear-gradient(180deg, transparent 0%, rgba(245,158,11,0.7) 15%, rgba(245,158,11,0.7) 85%, transparent 100%) !important;
+  box-shadow: 0 0 4px rgba(245,158,11,0.6) !important;
 }
 
 /* Оранжевый ярлык тега в режиме редактирования */
