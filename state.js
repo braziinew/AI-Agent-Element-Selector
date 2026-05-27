@@ -10,6 +10,7 @@ var isDragging      = false;
 var isResizing      = false;
 var isTemplateMode  = false;
 var isPropsPanelOpen = false; // Панель свойств открыта/закрыта
+var isSubInspecting = false; // Выбор доп. элементов с CTRL
 
 // --- НАПРАВЛЕНИЕ RESIZE ---
 var resizeDirection = '';

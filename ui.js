@@ -302,6 +302,11 @@ function createRootContainer() {
   // Инициализируем Properties Panel
   _bindPropsPanelEvents();
 
+  // Инициализация дополнительных обработчиков (Sub-inspection)
+  if (typeof initSubInspectionListeners === 'function') {
+    initSubInspectionListeners();
+  }
+
   // Строим Templates Panel
   buildTemplatesPanel();
 
@@ -314,6 +319,9 @@ function unloadAnnotator() {
   stopInspection(true);
   stopEditMode(true);
   if (isTemplateMode) _cancelInsertMode();
+  if (typeof deinitSubInspectionListeners === 'function') {
+    deinitSubInspectionListeners();
+  }
   clearAllAnnotations();
 
   window.removeEventListener('scroll', scheduleUpdatePositions);
