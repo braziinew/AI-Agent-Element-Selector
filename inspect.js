@@ -145,18 +145,18 @@ function _stopSubInspecting() {
 }
 
 function _handleSubKeyUp(e) {
-  if (e.key === 'Control' && isSubInspecting) {
+  if (e.key === 'Alt' && isSubInspecting) {
     _stopSubInspecting();
   }
 }
 
 function _handleSubMouseOver(e) {
-  if (isEditing && e.ctrlKey) {
+  if (isEditing && e.altKey) {
     if (!isSubInspecting) {
       isSubInspecting = true;
       document.body.style.cursor = 'crosshair';
     }
-  } else if (isSubInspecting && !e.ctrlKey) {
+  } else if (isSubInspecting && !e.altKey) {
     _stopSubInspecting();
     return;
   }
@@ -180,10 +180,10 @@ function _handleSubMouseOver(e) {
 }
 
 function _handleSubMouseMove(e) {
-  if (isEditing && e.ctrlKey && !isSubInspecting) {
+  if (isEditing && e.altKey && !isSubInspecting) {
     isSubInspecting = true;
     document.body.style.cursor = 'crosshair';
-  } else if (isSubInspecting && !e.ctrlKey) {
+  } else if (isSubInspecting && !e.altKey) {
     _stopSubInspecting();
     return;
   }

@@ -551,7 +551,32 @@ async function copyAllPrompt() {
 
     prompt += `Твоя задача: Внеси указанные изменения в код проекта для всех перечисленных страниц. Сделай только необходимые diff-ы или измененные участки кода, не выводи весь файл целиком.`;
 
-    await navigator.clipboard.writeText(prompt.trim());
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(prompt.trim());
+      } else {
+        throw new Error("navigator.clipboard API not available");
+      }
+    } catch (clipboardError) {
+      console.warn("Clipboard API failed, trying fallback:", clipboardError);
+      const textArea = document.createElement("textarea");
+      textArea.value = prompt.trim();
+      // Ensure the textarea is not visible but part of the document
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        const successful = document.execCommand('copy');
+        if (!successful) throw new Error("execCommand copy failed");
+      } catch (err) {
+        throw err;
+      } finally {
+        document.body.removeChild(textArea);
+      }
+    }
     showToastNotification('Глобальный промпт скопирован!');
 
     const btn = shadowRoot?.getElementById('btn-copy-all');
