@@ -289,6 +289,22 @@ function createRootContainer() {
   shadowRoot.appendChild(wrapper);
 
   // Привязываем основные обработчики
+  const verbositySelect = shadowRoot.getElementById('prompt-verbosity');
+  if (verbositySelect) {
+    try {
+      chrome.storage.local.get(['ai_annotator_verbosity'], (res) => {
+        if (res.ai_annotator_verbosity) {
+          verbositySelect.value = res.ai_annotator_verbosity;
+        }
+      });
+      verbositySelect.addEventListener('change', (e) => {
+        chrome.storage.local.set({ ai_annotator_verbosity: e.target.value });
+      });
+    } catch (e) {
+      console.warn('AI Annotator: ошибка сохранения verbosity', e);
+    }
+  }
+
   shadowRoot.getElementById('btn-toggle-inspect').addEventListener('click', toggleInspection);
   shadowRoot.getElementById('btn-toggle-edit').addEventListener('click', toggleEditMode);
   shadowRoot.getElementById('btn-toggle-templates').addEventListener('click', toggleTemplatesPanel);
