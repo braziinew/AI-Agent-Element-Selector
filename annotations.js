@@ -115,8 +115,14 @@ function createStickyNote(ann) {
   textarea.addEventListener('blur', () => {
     // Небольшая задержка: чтобы успел сработать клик по кнопке «Удалить»
     setTimeout(() => {
+      // Если мы вернули фокус полю (например, при клике с зажатым ALT) — не закрываем
+      if (shadowRoot && shadowRoot.activeElement === textarea) return;
+      // Если зажат ALT (режим выбора) — не закрываем
+      if (typeof isSubInspecting !== 'undefined' && isSubInspecting) return;
+      
+      // Иначе сворачиваем
       if (annotations.some(a => a.id === ann.id)) saveAndCollapseAnnotation(ann.id);
-    }, 150);
+    }, 200);
   });
 
   note.querySelector('.btn-note-done').addEventListener('click',   (e) => { e.stopPropagation(); saveAndCollapseAnnotation(ann.id); });
