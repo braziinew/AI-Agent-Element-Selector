@@ -28,8 +28,17 @@ function createRootContainer() {
   wrapper.innerHTML = `
     <div class="master-panel">
       <div class="master-header">
-        <h4 class="master-title" id="master-panel-title">🧠 AI Annotator</h4>
-        <button class="btn-close-master" id="btn-unload" title="Закрыть и очистить всё">&times;</button>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+          <h4 class="master-title" id="master-panel-title">🧠 AI Annotator</h4>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <select id="prompt-verbosity" class="verbosity-select" title="Настройки содержимого копирования для ИИ агента">
+              <option value="brief">Кратко</option>
+              <option value="normal" selected>Обычно</option>
+              <option value="extended">Расширенно</option>
+            </select>
+            <button class="btn-close-master" id="btn-unload" title="Закрыть и очистить всё">&times;</button>
+          </div>
+        </div>
       </div>
 
       <div class="status-indicator">
@@ -49,17 +58,15 @@ function createRootContainer() {
         </button>
       </div>
 
-      <div class="master-actions">
-        <div class="undo-redo-row">
-          <button class="btn-undo-redo" id="btn-undo" title="Отменить последнее действие (Ctrl+Z)" disabled>
-            ↩ <span class="label">Отменить</span>
-          </button>
-          <button class="btn-undo-redo" id="btn-redo" title="Повторить отменённое (Ctrl+Y)" disabled>
-            <span class="label">Повторить</span> ↪
-          </button>
-        </div>
-        <button class="btn btn-secondary" id="btn-clear-all" style="width:100%;margin-top:6px;" disabled>Очистить всё</button>
-        <button class="btn-copy-agent" id="btn-copy-all" style="width:100%;margin-top:6px;" disabled>
+      <div class="master-actions-vertical">
+        <button class="btn-undo-redo" id="btn-undo" title="Отменить последнее действие (Ctrl+Z)" disabled>
+          ↩ <span class="label">Отменить</span>
+        </button>
+        <button class="btn-undo-redo" id="btn-redo" title="Повторить отменённое (Ctrl+Y)" disabled>
+          <span class="label">Повторить</span> ↪
+        </button>
+        <button class="btn btn-secondary" id="btn-clear-all" disabled>Очистить всё</button>
+        <button class="btn-copy-agent" id="btn-copy-all" disabled>
           <span>📋</span> Скопировать всё агенту <span class="copy-agent-count" id="copy-all-count">0</span>
         </button>
       </div>
@@ -459,6 +466,7 @@ async function copyAllPrompt() {
     let totalAnns = 0;
     let totalEdits = 0;
     let totalTpls = 0;
+    const verbosity = shadowRoot?.getElementById('prompt-verbosity')?.value || 'normal';
 
     keys.forEach((key) => {
       const data = allData[key];
@@ -479,7 +487,13 @@ async function copyAllPrompt() {
         prompt += `📌 АННОТАЦИИ И ВОПРОСЫ:\n`;
         data.annotations.forEach((ann, i) => {
           const text = ann.text.trim() || 'Посмотри на этот элемент.';
-          prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n   Комментарий: ${text}\n   HTML элемента:\n\`\`\`html\n${getShortHtml(ann.html)}\n\`\`\`\n\n`;
+          prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n   Запрос пользователя: ${text}\n`;
+          if (verbosity === 'extended' || verbosity === 'normal') {
+            const htmlToUse = verbosity === 'extended' ? ann.html : getShortHtml(ann.html);
+            prompt += `   HTML элемента:\n\`\`\`html\n${htmlToUse}\n\`\`\`\n\n`;
+          } else {
+            prompt += `\n`;
+          }
         });
       }
 
@@ -502,8 +516,9 @@ async function copyAllPrompt() {
               prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`;
             }
           });
-          if (el) {
-            prompt += `   HTML (текущее состояние):\n\`\`\`html\n${getShortHtml(el.outerHTML)}\n\`\`\`\n`;
+          if (el && (verbosity === 'extended' || verbosity === 'normal')) {
+            const htmlToUse = verbosity === 'extended' ? el.outerHTML : getShortHtml(el.outerHTML);
+            prompt += `   HTML (текущее состояние):\n\`\`\`html\n${htmlToUse}\n\`\`\`\n`;
           }
           prompt += '\n';
         });
