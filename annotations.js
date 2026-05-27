@@ -280,7 +280,9 @@ function updatePositions() {
     _positionOverlay(overlay, rect, scroll);
 
     badge.textContent   = `${index + 1}`;
-    if (ann.clickCoords) {
+    const placement = (window.aiSettings && window.aiSettings.placement) ? window.aiSettings.placement : 'click';
+
+    if (placement === 'click' && ann.clickCoords) {
       badge.style.left    = `${ann.clickCoords.x - 8}px`;
       badge.style.top     = `${ann.clickCoords.y - 12}px`;
     } else {
@@ -300,8 +302,9 @@ function updatePositions() {
 
         const noteW = 260;
         let left, top;
+        const placement = (window.aiSettings && window.aiSettings.placement) ? window.aiSettings.placement : 'click';
 
-        if (ann.clickCoords) {
+        if (placement === 'click' && ann.clickCoords) {
           left = ann.clickCoords.x + 10;
           top = ann.clickCoords.y;
           
@@ -316,7 +319,7 @@ function updatePositions() {
           if (rect.left + rect.width + 10 + noteW > window.innerWidth) {
             left = rect.left + scroll.x - noteW - 10;
           }
-          // Не влезает слева → ставим снизу
+          // Не влезает слева → ставим снизу (как было изначально)
           if (left < scroll.x) {
             left = Math.max(scroll.x + 10, rect.left + scroll.x);
             top  = rect.top + scroll.y + rect.height + 10;

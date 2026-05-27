@@ -31,11 +31,26 @@ function createRootContainer() {
         <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
           <h4 class="master-title" id="master-panel-title">🧠 AI Annotator</h4>
           <div style="display:flex; align-items:center; gap:8px;">
-            <select id="prompt-verbosity" class="verbosity-select" title="Настройки содержимого копирования для ИИ агента">
-              <option value="brief">Кратко</option>
-              <option value="normal" selected>Обычно</option>
-              <option value="extended">Расширенно</option>
-            </select>
+            <div class="settings-dropdown">
+              <button class="btn-settings" id="btn-settings" title="Настройки">⚙️</button>
+              <div class="settings-popover" id="settings-popover">
+                <div class="settings-group">
+                  <label for="prompt-verbosity">Детализация ИИ:</label>
+                  <select id="prompt-verbosity" class="verbosity-select">
+                    <option value="brief">Кратко</option>
+                    <option value="normal" selected>Обычно</option>
+                    <option value="extended">Расширенно</option>
+                  </select>
+                </div>
+                <div class="settings-group">
+                  <label for="annotation-placement">Позиция стикера:</label>
+                  <select id="annotation-placement" class="verbosity-select">
+                    <option value="click" selected>По клику</option>
+                    <option value="side">Сбоку</option>
+                  </select>
+                </div>
+              </div>
+            </div>
             <button class="btn-close-master" id="btn-unload" title="Закрыть и очистить всё">&times;</button>
           </div>
         </div>
@@ -290,19 +305,55 @@ function createRootContainer() {
 
   // Привязываем основные обработчики
   const verbositySelect = shadowRoot.getElementById('prompt-verbosity');
+  const placementSelect = shadowRoot.getElementById('annotation-placement');
+  const btnSettings = shadowRoot.getElementById('btn-settings');
+  const popover = shadowRoot.getElementById('settings-popover');
+
+  // Управление открытием/закрытием настроек
+  if (btnSettings && popover) {
+    btnSettings.addEventListener('click', (e) => {
+      e.stopPropagation();
+      popover.classList.toggle('show');
+    });
+    // Закрытие по клику вне поповера
+    document.addEventListener('click', (e) => {
+      if (popover.classList.contains('show') && !e.composedPath().includes(popover) && !e.composedPath().includes(btnSettings)) {
+        popover.classList.remove('show');
+      }
+    });
+  }
+
+  // Восстановление настроек
+  try {
+    chrome.storage.local.get(['ai_annotator_verbosity', 'ai_annotator_placement'], (res) => {
+      if (res.ai_annotator_verbosity && verbositySelect) {
+        verbositySelect.value = res.ai_annotator_verbosity;
+      }
+      if (res.ai_annotator_placement && placementSelect) {
+        placementSelect.value = res.ai_annotator_placement;
+      }
+      // Сохраняем в глобальную переменную для быстрого доступа из annotations.js
+      window.aiSettings = {
+        placement: res.ai_annotator_placement || 'click'
+      };
+    });
+  } catch (e) {
+    console.warn('AI Annotator: ошибка загрузки настроек', e);
+  }
+
+  // Сохранение настроек при изменении
   if (verbositySelect) {
-    try {
-      chrome.storage.local.get(['ai_annotator_verbosity'], (res) => {
-        if (res.ai_annotator_verbosity) {
-          verbositySelect.value = res.ai_annotator_verbosity;
-        }
-      });
-      verbositySelect.addEventListener('change', (e) => {
-        chrome.storage.local.set({ ai_annotator_verbosity: e.target.value });
-      });
-    } catch (e) {
-      console.warn('AI Annotator: ошибка сохранения verbosity', e);
-    }
+    verbositySelect.addEventListener('change', (e) => {
+      chrome.storage.local.set({ ai_annotator_verbosity: e.target.value });
+    });
+  }
+  if (placementSelect) {
+    placementSelect.addEventListener('change', (e) => {
+      const val = e.target.value;
+      window.aiSettings = { ...window.aiSettings, placement: val };
+      chrome.storage.local.set({ ai_annotator_placement: val });
+      if (typeof scheduleUpdatePositions === 'function') scheduleUpdatePositions();
+    });
   }
 
   shadowRoot.getElementById('btn-toggle-inspect').addEventListener('click', toggleInspection);

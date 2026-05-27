@@ -318,6 +318,62 @@
   width: 100% !important;
 }
 
+.settings-dropdown {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.btn-settings {
+  background: none !important;
+  border: none !important;
+  color: #fff !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 4px !important;
+  border-radius: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s !important;
+  opacity: 0.8 !important;
+}
+.btn-settings:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  opacity: 1 !important;
+}
+
+.settings-popover {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  margin-top: 8px !important;
+  background: #1e293b !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
+  border-radius: 8px !important;
+  padding: 10px !important;
+  display: none !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  min-width: 160px !important;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5) !important;
+  z-index: 99999 !important;
+}
+.settings-popover.show {
+  display: flex !important;
+}
+
+.settings-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+}
+.settings-group label {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
 .verbosity-select {
   background: rgba(255,255,255,0.08) !important;
   border: 1px solid rgba(255,255,255,0.15) !important;
