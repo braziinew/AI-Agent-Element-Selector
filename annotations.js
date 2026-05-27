@@ -111,7 +111,13 @@ function createStickyNote(ann) {
 
   textarea.addEventListener('input',   (e) => { ann.text = e.target.value; });
   textarea.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); saveAndCollapseAnnotation(ann.id); }
+    if (e.key === 'Enter' && !e.shiftKey) { 
+      e.preventDefault(); 
+      saveAndCollapseAnnotation(ann.id); 
+    } else if (e.key === 'Escape') { 
+      e.preventDefault(); 
+      deleteAnnotation(ann.id); 
+    }
   });
   textarea.addEventListener('blur', () => {
     // Небольшая задержка: чтобы успел сработать клик по кнопке «Удалить»
