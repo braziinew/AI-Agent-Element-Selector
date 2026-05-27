@@ -105,7 +105,7 @@ function handleElementClick(e) {
   e.stopPropagation();
 
   const el = lastHoveredElement || e.target;
-  if (el) addAnnotation(el);
+  if (el) addAnnotation(el, { x: e.pageX, y: e.pageY });
 }
 
 /* -------------------------------------------------------

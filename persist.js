@@ -36,6 +36,7 @@ function saveAnnotatorState() {
         text: a.text,
         tagName: a.tagName,
         html: (a.html || '').substring(0, 3000),
+        clickCoords: a.clickCoords,
       })),
       insertedTemplates: (window.insertedTemplates || []).map(t => ({
         id: t.id,
@@ -114,6 +115,7 @@ async function loadAnnotatorState() {
             html:     annData.html || el.outerHTML,
             text:     annData.text || '',
             minimized: true,
+            clickCoords: annData.clickCoords || null,
           };
           window.annotations.push(ann);
           if (typeof createStickyNote === 'function' && window.shadowRoot) createStickyNote(ann);

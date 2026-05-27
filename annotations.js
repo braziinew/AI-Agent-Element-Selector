@@ -51,7 +51,7 @@ function scheduleUpdatePositions() {
  * Создаёт стикер в Shadow DOM и переключает в режим ввода.
  * @param {Element} element
  */
-function addAnnotation(element) {
+function addAnnotation(element, clickCoords = null) {
   if (annotations.some(a => a.element === element)) return;
 
   const id  = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -63,6 +63,7 @@ function addAnnotation(element) {
     html:      element.outerHTML,
     text:      '',
     minimized: false,
+    clickCoords,
   };
 
   annotations.push(ann);
@@ -273,8 +274,13 @@ function updatePositions() {
     _positionOverlay(overlay, rect, scroll);
 
     badge.textContent   = `${index + 1}`;
-    badge.style.left    = `${rect.left + scroll.x - 8}px`;
-    badge.style.top     = `${rect.top  + scroll.y - 12}px`;
+    if (ann.clickCoords) {
+      badge.style.left    = `${ann.clickCoords.x - 8}px`;
+      badge.style.top     = `${ann.clickCoords.y - 12}px`;
+    } else {
+      badge.style.left    = `${rect.left + scroll.x - 8}px`;
+      badge.style.top     = `${rect.top  + scroll.y - 12}px`;
+    }
     badge.style.display = 'flex';
     badge.classList.toggle('minimized', ann.minimized);
     badge.title = ann.minimized ? 'Развернуть аннотацию' : 'Свернуть аннотацию';
@@ -287,17 +293,28 @@ function updatePositions() {
         note.style.display = 'flex';
 
         const noteW = 260;
-        let left = rect.left + scroll.x + rect.width + 10;
-        let top  = rect.top  + scroll.y;
+        let left, top;
 
-        // Не влезает справа → пробуем слева
-        if (rect.left + rect.width + 10 + noteW > window.innerWidth) {
-          left = rect.left + scroll.x - noteW - 10;
-        }
-        // Не влезает слева → ставим снизу
-        if (left < scroll.x) {
-          left = Math.max(scroll.x + 10, rect.left + scroll.x);
-          top  = rect.top + scroll.y + rect.height + 10;
+        if (ann.clickCoords) {
+          left = ann.clickCoords.x + 10;
+          top = ann.clickCoords.y;
+          
+          if (left - scroll.x + noteW > window.innerWidth) {
+            left = ann.clickCoords.x - noteW - 10;
+          }
+        } else {
+          left = rect.left + scroll.x + rect.width + 10;
+          top  = rect.top  + scroll.y;
+
+          // Не влезает справа → пробуем слева
+          if (rect.left + rect.width + 10 + noteW > window.innerWidth) {
+            left = rect.left + scroll.x - noteW - 10;
+          }
+          // Не влезает слева → ставим снизу
+          if (left < scroll.x) {
+            left = Math.max(scroll.x + 10, rect.left + scroll.x);
+            top  = rect.top + scroll.y + rect.height + 10;
+          }
         }
 
         note.style.left = `${left}px`;
