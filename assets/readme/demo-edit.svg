@@ -1,0 +1,26 @@
+<svg width="960" height="620" viewBox="0 0 960 620" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="960" height="620" rx="28" fill="#111827"/>
+  <rect x="40" y="36" width="880" height="548" rx="24" fill="#F8FAFC"/>
+  <rect x="40" y="36" width="880" height="70" rx="24" fill="#0F172A"/>
+  <rect x="80" y="142" width="290" height="34" rx="12" fill="#0F172A"/>
+  <text x="80" y="128" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#E5E7EB">Было</text>
+  <rect x="80" y="196" width="390" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="80" y="224" width="340" height="16" rx="8" fill="#CBD5E1"/>
+  <rect x="80" y="268" width="180" height="46" rx="14" fill="#94A3B8"/>
+  <text x="170" y="298" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="white">Кнопка</text>
+  <rect x="520" y="142" width="290" height="34" rx="12" fill="#16A34A"/>
+  <text x="520" y="128" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#14532D">Стало</text>
+  <rect x="520" y="196" width="280" height="20" rx="10" fill="#0F172A"/>
+  <rect x="520" y="228" width="320" height="18" rx="9" fill="#86EFAC"/>
+  <rect x="520" y="268" width="240" height="58" rx="18" fill="#2563EB"/>
+  <text x="640" y="304" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="white">Попробовать бесплатно</text>
+  <rect x="464" y="182" width="20" height="154" rx="10" fill="#E5E7EB"/>
+  <path d="M475 223L503 223" stroke="#22C55E" stroke-width="8" stroke-linecap="round"/>
+  <path d="M492 208L507 223L492 238" stroke="#22C55E" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="560" y="374" width="300" height="126" rx="20" fill="#FFFFFF" stroke="#BFDBFE" stroke-width="4"/>
+  <text x="588" y="410" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#1D4ED8">Быстрая правка</text>
+  <rect x="588" y="430" width="210" height="16" rx="8" fill="#DBEAFE"/>
+  <rect x="588" y="458" width="170" height="16" rx="8" fill="#DBEAFE"/>
+  <rect x="588" y="482" width="120" height="10" rx="5" fill="#93C5FD"/>
+  <text x="80" y="544" font-family="Arial, sans-serif" font-size="30" font-weight="700" fill="#0F172A">2. Сразу проверяете идею на странице, не объясняя её вслепую</text>
+</svg>
