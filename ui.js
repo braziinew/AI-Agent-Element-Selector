@@ -616,7 +616,7 @@ async function copyAllPrompt() {
           const text = ann.text.trim() || 'Посмотри на этот элемент.';
           if (isMinimal) {
             const summary = getElementSummary(ann.html);
-            prompt += `${i + 1}. ${summary} — \`${ann.selector}\`\n   → ${text}\n`;
+            prompt += `${i + 1}. ${summary} — \`${ann.selector}\`\n   Запрос пользователя: ${text}\n`;
           } else {
             prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n   Запрос пользователя: ${text}\n`;
             if (verbosity === 'extended' || verbosity === 'normal') {
@@ -694,7 +694,7 @@ async function copyAllPrompt() {
     }
 
     if (isMinimal) {
-      prompt += `Внеси указанные изменения.`;
+      prompt += ` `;
     } else {
       prompt += `Твоя задача: Внеси указанные изменения в код проекта для всех перечисленных страниц. Сделай только необходимые diff-ы или измененные участки кода, не выводи весь файл целиком.`;
     }
