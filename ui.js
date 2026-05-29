@@ -540,9 +540,9 @@ async function copyAllPrompt() {
     };
 
     /**
-     * Строит структурное резюме элемента для minimal-режима.
-     * Возвращает строку вида: <tag.class#id> (WxH) | дети: 3 | текст: "..."
-     * Даёт агенту контекст без полного HTML.
+     * Строит структурное резюме элемента для minimal/brief-режима.
+     * Возвращает строку вида: <tag.class#id> [type=email, placeholder="...", required] | текст: "..."
+     * Даёт агенту контекст без полного HTML — семантически важные атрибуты включены.
      */
     const getElementSummary = (html) => {
       if (!html) return '';
@@ -564,25 +564,36 @@ async function copyAllPrompt() {
         if (clean.length) cls = '.' + clean.slice(0, 3).join('.');
       }
 
-      // Размеры — из data-атрибутов или стилей (если есть)
-      const styleMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i);
-      let dims = '';
-      if (styleMatch) {
-        const wMatch = styleMatch[1].match(/width\s*:\s*([^;]+)/i);
-        const hMatch = styleMatch[1].match(/height\s*:\s*([^;]+)/i);
-        if (wMatch || hMatch) dims = ` (${wMatch ? wMatch[1].trim() : '?'}×${hMatch ? hMatch[1].trim() : '?'})`;
+      // Извлекаем семантически важные атрибуты для контекста
+      const importantAttrNames = ['type', 'name', 'role', 'placeholder', 'src', 'href', 'alt',
+        'title', 'for', 'action', 'method', 'target', 'rel', 'value',
+        'required', 'disabled', 'checked', 'selected', 'readonly', 'multiple'];
+      const attrParts = [];
+      importantAttrNames.forEach(attrName => {
+        const re = new RegExp('\\b' + attrName + '\\s*=\\s*["\']([^"\']+)["\']', 'i');
+        const match = attrs.match(re);
+        if (match) attrParts.push(`${attrName}="${match[1]}"`);
+        // Логические атрибуты (без значения)
+        const boolRe = new RegExp('\\b' + attrName + '\\b(?!=)', 'i');
+        if (!match && boolRe.test(attrs)) attrParts.push(attrName);
+      });
+      // data-* атрибуты
+      const dataMatches = attrs.matchAll(/\b(data-[a-zA-Z0-9\-]+)\s*=\s*["']([^"']+)["']/gi);
+      for (const dm of dataMatches) {
+        attrParts.push(`${dm[1]}="${dm[2]}"`);
       }
+      // aria-* атрибуты
+      const ariaMatches = attrs.matchAll(/\b(aria-[a-zA-Z0-9\-]+)\s*=\s*["']([^"']+)["']/gi);
+      for (const am of ariaMatches) {
+        attrParts.push(`${am[1]}="${am[2]}"`);
+      }
+      const attrsStr = attrParts.length > 0 ? ` [${attrParts.join(', ')}]` : '';
 
-      // Количество дочерних элементов
-      const childMatch = html.match(/<\/[a-zA-Z0-9\-]+>/g);
-      const childCount = childMatch ? childMatch.length - 1 : 0;
-      const childInfo = childCount > 0 ? ` | дети: ${childCount}` : '';
+      // Краткий текст (до 120 символов)
+      const textContent = html.replace(/<[^>]*>/g, '').trim().substring(0, 120);
+      const textInfo = textContent ? ` | текст: "${textContent}${textContent.length >= 120 ? '…' : ''}"` : '';
 
-      // Краткий текст (до 60 символов)
-      const textContent = html.replace(/<[^>]*>/g, '').trim().substring(0, 60);
-      const textInfo = textContent ? ` | текст: "${textContent}${textContent.length >= 60 ? '…' : ''}"` : '';
-
-      return `<${tag}${cls}${id}>${dims}${childInfo}${textInfo}`;
+      return `<${tag}${cls}${id}>${attrsStr}${textInfo}`;
     };
 
     let totalAnns = 0;
@@ -611,10 +622,11 @@ async function copyAllPrompt() {
       // 1. АННОТАЦИИ
       if (hasAnns) {
         totalAnns += data.annotations.length;
+        const isBrief = verbosity === 'brief';
         prompt += isMinimal ? `📌 ` : `📌 АННОТАЦИИ И ВОПРОСЫ:\n`;
         data.annotations.forEach((ann, i) => {
           const text = ann.text.trim() || 'Посмотри на этот элемент.';
-          if (isMinimal) {
+          if (isMinimal || isBrief) {
             const summary = getElementSummary(ann.html);
             prompt += `${i + 1}. ${summary} — \`${ann.selector}\`\n   Запрос пользователя: ${text}\n`;
           } else {
@@ -622,17 +634,16 @@ async function copyAllPrompt() {
             if (verbosity === 'extended' || verbosity === 'normal') {
               const htmlToUse = verbosity === 'extended' ? ann.html : getShortHtml(ann.html);
               prompt += `   HTML элемента:\n\`\`\`html\n${htmlToUse}\n\`\`\`\n\n`;
-            } else {
-              prompt += `\n`;
             }
           }
         });
-        if (isMinimal) prompt += `\n`;
+        if (isMinimal || isBrief) prompt += `\n`;
       }
 
       // 2. РЕДАКТИРОВАНИЕ
       if (hasEdits) {
         totalEdits += data.editChanges.length;
+        const isBrief = verbosity === 'brief';
         prompt += isMinimal ? `📝 ` : `📝 ВНЕСЕННЫЕ ПРАВКИ (перенеси эти изменения в код):\n`;
         const bySelector = {};
         data.editChanges.forEach(c => { if (!bySelector[c.selector]) bySelector[c.selector]=[]; bySelector[c.selector].push(c); });
@@ -640,13 +651,18 @@ async function copyAllPrompt() {
         let editCounter = 1;
         Object.entries(bySelector).forEach(([sel, changes]) => {
           const el = document.querySelector(sel);
-          if (isMinimal) {
+          if (isMinimal || isBrief) {
             const summary = el ? getElementSummary(el.outerHTML) : '';
             prompt += `${editCounter++}. ${summary ? summary + ' ' : ''}\`${sel}\`\n`;
             changes.forEach(c => {
               if (c.property === 'textContent') {
-                const shortVal = c.newValue.length > 40 ? c.newValue.substring(0, 40) + '…' : c.newValue;
-                prompt += `   • текст → "${shortVal}"\n`;
+                const shortVal = c.newValue.length > 120 ? c.newValue.substring(0, 120) + '…' : c.newValue;
+                const shortOld = c.oldValue && c.oldValue.length > 60 ? c.oldValue.substring(0, 60) + '…' : c.oldValue;
+                if (shortOld) {
+                  prompt += `   • текст: "${shortOld}" → "${shortVal}"\n`;
+                } else {
+                  prompt += `   • текст → "${shortVal}"\n`;
+                }
               } else {
                 prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`;
               }
@@ -673,7 +689,7 @@ async function copyAllPrompt() {
       if (hasTpls) {
         totalTpls += data.insertedTemplates.length;
         if (isMinimal) {
-          prompt += `📐 НОВЫЕ БЛОКИ:\n`;
+          prompt += `📐 НОВЫЕ БЛОКИ (wireframes — удали класс ai-selector-template-block и реализуй как полноценные компоненты):\n`;
           data.insertedTemplates.forEach((t, i) => {
             prompt += `${i + 1}. "${t.label}" → \`${t.selector}\`\n`;
           });
@@ -694,7 +710,7 @@ async function copyAllPrompt() {
     }
 
     if (isMinimal) {
-      prompt += ` `;
+      prompt += `Внеси указанные изменения в код проекта.`;
     } else {
       prompt += `Твоя задача: Внеси указанные изменения в код проекта для всех перечисленных страниц. Сделай только необходимые diff-ы или измененные участки кода, не выводи весь файл целиком.`;
     }
