@@ -27,17 +27,33 @@ function saveAnnotatorState() {
       });
     }
 
+    // Определяем текущий режим детализации для оптимизации хранения
+    const currentVerbosity = (typeof shadowRoot !== 'undefined' && shadowRoot)
+      ? shadowRoot.getElementById('prompt-verbosity')?.value || 'normal'
+      : 'normal';
+
     const data = {
       url: window.location.href, // сохраняем URL для удобства при копировании
       editChanges: window.editChangesLog || [],
       appliedStyles,
-      annotations: (window.annotations || []).map(a => ({
-        selector: a.selector,
-        text: a.text,
-        tagName: a.tagName,
-        html: (a.html || '').substring(0, 3000),
-        clickCoords: a.clickCoords,
-      })),
+      annotations: (window.annotations || []).map(a => {
+        const rawHtml = a.html || '';
+        let savedHtml;
+        if (currentVerbosity === 'minimal') {
+          // В минимальном режиме сохраняем только открывающий тег (для getElementSummary)
+          const tagMatch = rawHtml.match(/^<[^>]+>/);
+          savedHtml = tagMatch ? tagMatch[0] : rawHtml.substring(0, 120);
+        } else {
+          savedHtml = rawHtml.substring(0, 3000);
+        }
+        return {
+          selector: a.selector,
+          text: a.text,
+          tagName: a.tagName,
+          html: savedHtml,
+          clickCoords: a.clickCoords,
+        };
+      }),
       insertedTemplates: (window.insertedTemplates || []).map(t => ({
         id: t.id,
         label: t.label,

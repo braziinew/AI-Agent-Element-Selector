@@ -37,6 +37,7 @@ function createRootContainer() {
                 <div class="settings-group">
                   <label for="prompt-verbosity">Детализация ИИ:</label>
                   <select id="prompt-verbosity" class="verbosity-select">
+                    <option value="minimal">Мин.</option>
                     <option value="brief">Кратко</option>
                     <option value="normal" selected>Обычно</option>
                     <option value="extended">Расширенно</option>
@@ -527,7 +528,7 @@ async function copyAllPrompt() {
 
     let prompt = '';
 
-    // Вспомогательная функция для сокращения HTML
+    // Вспомогательная функция для сокращения HTML (normal)
     const getShortHtml = (html) => {
       if (!html || html.length <= 400) return html;
       const m = html.match(/^<([a-zA-Z0-9\-]+)[^>]*>/);
@@ -538,10 +539,57 @@ async function copyAllPrompt() {
       return html.substring(0, 200) + '...';
     };
 
+    /**
+     * Строит структурное резюме элемента для minimal-режима.
+     * Возвращает строку вида: <tag.class#id> (WxH) | дети: 3 | текст: "..."
+     * Даёт агенту контекст без полного HTML.
+     */
+    const getElementSummary = (html) => {
+      if (!html) return '';
+      const m = html.match(/^<([a-zA-Z0-9\-]+)([^>]*)>/);
+      if (!m) return html.substring(0, 80);
+
+      const tag = m[1].toLowerCase();
+      const attrs = m[2];
+
+      // Извлекаем id
+      const idMatch = attrs.match(/\bid\s*=\s*["']([^"']+)["']/i);
+      const id = idMatch ? `#${idMatch[1]}` : '';
+
+      // Извлекаем классы (без ai-selector-*)
+      const classMatch = attrs.match(/\bclass\s*=\s*["']([^"']+)["']/i);
+      let cls = '';
+      if (classMatch) {
+        const clean = classMatch[1].split(/\s+/).filter(c => c && !c.startsWith('ai-selector'));
+        if (clean.length) cls = '.' + clean.slice(0, 3).join('.');
+      }
+
+      // Размеры — из data-атрибутов или стилей (если есть)
+      const styleMatch = attrs.match(/\bstyle\s*=\s*["']([^"']+)["']/i);
+      let dims = '';
+      if (styleMatch) {
+        const wMatch = styleMatch[1].match(/width\s*:\s*([^;]+)/i);
+        const hMatch = styleMatch[1].match(/height\s*:\s*([^;]+)/i);
+        if (wMatch || hMatch) dims = ` (${wMatch ? wMatch[1].trim() : '?'}×${hMatch ? hMatch[1].trim() : '?'})`;
+      }
+
+      // Количество дочерних элементов
+      const childMatch = html.match(/<\/[a-zA-Z0-9\-]+>/g);
+      const childCount = childMatch ? childMatch.length - 1 : 0;
+      const childInfo = childCount > 0 ? ` | дети: ${childCount}` : '';
+
+      // Краткий текст (до 60 символов)
+      const textContent = html.replace(/<[^>]*>/g, '').trim().substring(0, 60);
+      const textInfo = textContent ? ` | текст: "${textContent}${textContent.length >= 60 ? '…' : ''}"` : '';
+
+      return `<${tag}${cls}${id}>${dims}${childInfo}${textInfo}`;
+    };
+
     let totalAnns = 0;
     let totalEdits = 0;
     let totalTpls = 0;
     const verbosity = shadowRoot?.getElementById('prompt-verbosity')?.value || 'normal';
+    const isMinimal = verbosity === 'minimal';
 
     keys.forEach((key) => {
       const data = allData[key];
@@ -552,48 +600,70 @@ async function copyAllPrompt() {
 
       if (!hasAnns && !hasEdits && !hasTpls) return;
 
-      prompt += `=================================================\n`;
-      prompt += `СТРАНИЦА: ${pageUrl}\n`;
-      prompt += `=================================================\n\n`;
+      if (isMinimal) {
+        prompt += `📄 ${pageUrl}\n`;
+      } else {
+        prompt += `=================================================\n`;
+        prompt += `СТРАНИЦА: ${pageUrl}\n`;
+        prompt += `=================================================\n\n`;
+      }
 
       // 1. АННОТАЦИИ
       if (hasAnns) {
         totalAnns += data.annotations.length;
-        prompt += `📌 АННОТАЦИИ И ВОПРОСЫ:\n`;
+        prompt += isMinimal ? `📌 ` : `📌 АННОТАЦИИ И ВОПРОСЫ:\n`;
         data.annotations.forEach((ann, i) => {
           const text = ann.text.trim() || 'Посмотри на этот элемент.';
-          prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n   Запрос пользователя: ${text}\n`;
-          if (verbosity === 'extended' || verbosity === 'normal') {
-            const htmlToUse = verbosity === 'extended' ? ann.html : getShortHtml(ann.html);
-            prompt += `   HTML элемента:\n\`\`\`html\n${htmlToUse}\n\`\`\`\n\n`;
+          if (isMinimal) {
+            const summary = getElementSummary(ann.html);
+            prompt += `${i + 1}. ${summary} — \`${ann.selector}\`\n   → ${text}\n`;
           } else {
-            prompt += `\n`;
+            prompt += `${i + 1}. Селектор: \`${ann.selector}\`\n   Запрос пользователя: ${text}\n`;
+            if (verbosity === 'extended' || verbosity === 'normal') {
+              const htmlToUse = verbosity === 'extended' ? ann.html : getShortHtml(ann.html);
+              prompt += `   HTML элемента:\n\`\`\`html\n${htmlToUse}\n\`\`\`\n\n`;
+            } else {
+              prompt += `\n`;
+            }
           }
         });
+        if (isMinimal) prompt += `\n`;
       }
 
       // 2. РЕДАКТИРОВАНИЕ
       if (hasEdits) {
         totalEdits += data.editChanges.length;
-        prompt += `📝 ВНЕСЕННЫЕ ПРАВКИ (перенеси эти изменения в код):\n`;
+        prompt += isMinimal ? `📝 ` : `📝 ВНЕСЕННЫЕ ПРАВКИ (перенеси эти изменения в код):\n`;
         const bySelector = {};
         data.editChanges.forEach(c => { if (!bySelector[c.selector]) bySelector[c.selector]=[]; bySelector[c.selector].push(c); });
 
         let editCounter = 1;
         Object.entries(bySelector).forEach(([sel, changes]) => {
-          // Пытаемся найти HTML в DOM, если мы находимся на этой же странице
           const el = document.querySelector(sel);
-          prompt += `${editCounter++}. Элемент: \`${sel}\`\n`;
-          changes.forEach(c => {
-            if (c.property === 'textContent') {
-              prompt += '   • Изменен текст на: ' + (c.newValue.includes('\\n') ? '\\n```\\n' + c.newValue + '\\n```' : '"' + c.newValue + '"') + '\\n';
-            } else {
-              prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`;
+          if (isMinimal) {
+            const summary = el ? getElementSummary(el.outerHTML) : '';
+            prompt += `${editCounter++}. ${summary ? summary + ' ' : ''}\`${sel}\`\n`;
+            changes.forEach(c => {
+              if (c.property === 'textContent') {
+                const shortVal = c.newValue.length > 40 ? c.newValue.substring(0, 40) + '…' : c.newValue;
+                prompt += `   • текст → "${shortVal}"\n`;
+              } else {
+                prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`;
+              }
+            });
+          } else {
+            prompt += `${editCounter++}. Элемент: \`${sel}\`\n`;
+            changes.forEach(c => {
+              if (c.property === 'textContent') {
+                prompt += '   • Изменен текст на: ' + (c.newValue.includes('\\n') ? '\\n```\\n' + c.newValue + '\\n```' : '"' + c.newValue + '"') + '\\n';
+              } else {
+                prompt += `   • ${c.property}: "${c.oldValue}" → "${c.newValue}"\n`;
+              }
+            });
+            if (el && (verbosity === 'extended' || verbosity === 'normal')) {
+              const htmlToUse = verbosity === 'extended' ? el.outerHTML : getShortHtml(el.outerHTML);
+              prompt += `   HTML (текущее состояние):\n\`\`\`html\n${htmlToUse}\n\`\`\`\n`;
             }
-          });
-          if (el && (verbosity === 'extended' || verbosity === 'normal')) {
-            const htmlToUse = verbosity === 'extended' ? el.outerHTML : getShortHtml(el.outerHTML);
-            prompt += `   HTML (текущее состояние):\n\`\`\`html\n${htmlToUse}\n\`\`\`\n`;
           }
           prompt += '\n';
         });
@@ -602,10 +672,17 @@ async function copyAllPrompt() {
       // 3. ШАБЛОНЫ
       if (hasTpls) {
         totalTpls += data.insertedTemplates.length;
-        prompt += `📐 НОВЫЕ БЛОКИ (Wireframes):\nЯ добавил на страницу схематичные блоки-плейсхолдеры. Твоя задача по ним:\n1. Удали из кода временные плейсхолдеры (элементы с классом \`ai-selector-template-block\`).\n2. Реализуй каждый из описанных ниже блоков как полноценный HTML/CSS-компонент в стиле проекта.\n3. Убедись, что новые компоненты визуально вписываются в существующий дизайн.\n\n`;
-        data.insertedTemplates.forEach((t, i) => {
-          prompt += `${i + 1}. Блок: **${t.label}**\n   Вставить в/внутрь: \`${t.selector}\`\n\n`;
-        });
+        if (isMinimal) {
+          prompt += `📐 НОВЫЕ БЛОКИ:\n`;
+          data.insertedTemplates.forEach((t, i) => {
+            prompt += `${i + 1}. "${t.label}" → \`${t.selector}\`\n`;
+          });
+        } else {
+          prompt += `📐 НОВЫЕ БЛОКИ (Wireframes):\nЯ добавил на страницу схематичные блоки-плейсхолдеры. Твоя задача по ним:\n1. Удали из кода временные плейсхолдеры (элементы с классом \`ai-selector-template-block\`).\n2. Реализуй каждый из описанных ниже блоков как полноценный HTML/CSS-компонент в стиле проекта.\n3. Убедись, что новые компоненты визуально вписываются в существующий дизайн.\n\n`;
+          data.insertedTemplates.forEach((t, i) => {
+            prompt += `${i + 1}. Блок: **${t.label}**\n   Вставить в/внутрь: \`${t.selector}\`\n\n`;
+          });
+        }
       }
       
       prompt += `\n`;
@@ -616,7 +693,11 @@ async function copyAllPrompt() {
       return;
     }
 
-    prompt += `Твоя задача: Внеси указанные изменения в код проекта для всех перечисленных страниц. Сделай только необходимые diff-ы или измененные участки кода, не выводи весь файл целиком.`;
+    if (isMinimal) {
+      prompt += `Внеси указанные изменения. Выводи только изменённые участки кода.`;
+    } else {
+      prompt += `Твоя задача: Внеси указанные изменения в код проекта для всех перечисленных страниц. Сделай только необходимые diff-ы или измененные участки кода, не выводи весь файл целиком.`;
+    }
 
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
